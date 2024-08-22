@@ -22,9 +22,8 @@ def start(message):
         return
     startMenu = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton("Управление хостами")
-    item3 = types.KeyboardButton("Управление хостами")
     item2 = types.KeyboardButton("Сервис")
-    startMenu.add(item1, item2, item3)
+    startMenu.add(item1, item2)
     bot.send_message(message.chat.id, 'Добро пожаловать в панель управления КВАС', reply_markup=startMenu)
 
 @bot.message_handler(content_types=['text'])
