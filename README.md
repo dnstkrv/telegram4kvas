@@ -11,7 +11,7 @@ curl -OLf https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/install.s
 
 Откройте файл /opt/etc/telegram4kvas/telegram_bot.py
 ```
-nano /opt/etc/telegram4kvas/telegram_bot.py
+nano /opt/etc/telegram4kvas/telegram_bot_config.py
 ```
 В параметр **token** необходимо ввести ключ, полученный от @BotFather. Ключ должен быть в 'кавычках'
 
