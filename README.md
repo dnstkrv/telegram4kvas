@@ -13,9 +13,9 @@ curl -OLf https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/install.s
 ```
 nano /opt/etc/telegram4kvas/telegram_bot.py
 ```
-В параметр **token** необходимо ввести ключ, полученный от @BotFather.
+В параметр **token** необходимо ввести ключ, полученный от @BotFather. Ключ должен быть в 'кавычках'
 
-В параметр **usernames** необходимо ввести Ваш логин Телеграм
+В параметр **usernames** необходимо ввести Ваш логин Телеграм. Логин должен быть в кавычках со ['скобками']
 # Запуск
 Бот запускается командой 
 ```
