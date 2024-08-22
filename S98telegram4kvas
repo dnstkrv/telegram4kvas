@@ -35,6 +35,7 @@ case "$1" in
                 if script_status
                 then
                         stop
+						echo Bot stop
                 else
                         echo Bot is not running
                 fi
