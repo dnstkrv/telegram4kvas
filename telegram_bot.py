@@ -37,9 +37,10 @@ def bot_message(message):
         serviceMenu = types.ReplyKeyboardMarkup(resize_keyboard=True)
         s1 = types.KeyboardButton("Запустить debug")
         s2 = types.KeyboardButton("Перезагрузить роутер")
+        s3 = types.KeyboardButton("Обновить бота")
         backward = types.KeyboardButton("Назад")
         serviceMenu.add(s1, s2)
-        serviceMenu.add(backward)
+        serviceMenu.add(s3, backward)
         
         hostsMenu = types.ReplyKeyboardMarkup(resize_keyboard=True)
         h1 = types.KeyboardButton("Добавить хост")
@@ -126,6 +127,11 @@ def bot_message(message):
                 debug = subprocess.Popen(["kvas", "debug", "kvas.debug"])
                 debug.wait()
                 bot.send_document(message.chat.id, open(r'/opt/root/kvas.debug', 'rb'), reply_markup=serviceMenu)
+                
+            if message.text == 'Обновить бота':
+                bot.send_message(message.chat.id, 'Запущено обновление бота', reply_markup=serviceMenu) 
+                os.system('curl -o /opt/tmp/upgrade.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/upgrade.sh && sh /opt/tmp/upgrade.sh')
+                return
 
             if message.text == "Назад":
                 bot.send_message(message.chat.id, 'Добро пожаловать в панель управления КВАС', reply_markup=mainMenu)
