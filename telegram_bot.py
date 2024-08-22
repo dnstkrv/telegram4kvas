@@ -12,13 +12,14 @@ import telegram_bot_config as config
 
 token = config.token
 usernames = config.usernames
+userid = config.userid
 bot = telebot.TeleBot(token)
 action = ""
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    if message.from_user.username not in usernames:
-        bot.send_message(message.chat.id, 'Вы не авторизованы, внесите свой логин в список')
+    if (message.from_user.username not in usernames) or (message.from_user.id not in userid):
+        bot.send_message(message.chat.id, 'Вы не авторизованы, внесите свой логин или ID в список')
         return
     startMenu = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton("Управление хостами")
@@ -50,8 +51,8 @@ def bot_message(message):
         hostsMenu.add(h1, h2)
         hostsMenu.add(h3, backward)
         
-        if message.from_user.username not in usernames:
-            bot.send_message(message.chat.id, 'Вы не авторизованы, внесите свой логин в список')
+        if (message.from_user.username not in usernames) or (message.from_user.id not in userid):
+            bot.send_message(message.chat.id, 'Вы не авторизованы, внесите свой логин или ID в список')
             return
             
         if message.chat.type == 'private':
