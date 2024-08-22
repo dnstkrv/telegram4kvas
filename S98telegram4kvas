@@ -1,0 +1,3 @@
+#!/bin/sh
+[ "$1" != "start" ] && exit 0
+python3 /opt/etc/telegram4kvas/telegram_bot.py &
