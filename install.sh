@@ -5,7 +5,7 @@ opkg install python3 python3-pip
 curl -O https://bootstrap.pypa.io/get-pip.py &> /dev/null
 python get-pip.py
 rm get-pip.py
-pip install pyTelegramBotAPI telethon pathlib
+pip install pyTelegramBotAPI pathlib
 
 mkdir -p "/opt/etc/telegram4kvas"
 

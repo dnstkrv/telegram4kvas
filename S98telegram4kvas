@@ -21,6 +21,8 @@ stop()
 {
         pid_to_kill=$(ps -w | grep 'python3 /opt/etc/telegram4kvas/telegram_bot.py' | grep -v 'grep' | cut -d' ' -f1)
 			[ -n "${pid_to_kill}" ] && kill -9 "${pid_to_kill}" &> /dev/null
+        pid_to_kill=$(ps -w | grep 'python3 /opt/etc/telegram4kvas/telegram_bot.py' | grep -v 'grep' | cut -d' ' -f2)
+			[ -n "${pid_to_kill}" ] && kill -9 "${pid_to_kill}" &> /dev/null
 }
 case "$1" in
         start)

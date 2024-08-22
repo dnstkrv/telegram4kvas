@@ -6,7 +6,7 @@ import stat
 import tempfile
 import telebot
 from telebot import types
-from telethon.sync import TelegramClient
+#from telethon.sync import TelegramClient
 import requests
 import telegram_bot_config as config
 
