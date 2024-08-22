@@ -13,4 +13,6 @@ curl -o /opt/etc/telegram4kvas/telegram_bot_config.py https://raw.githubusercont
 curl -o /opt/etc/telegram4kvas/telegram_bot.py https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/telegram_bot.py
 curl -o /opt/etc/init.d/S98telegram4kvas https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/S98telegram4kvas
 
+chmod +x /opt/etc/init.d/S98telegram4kvas
+
 echo -e "\n\nВнесите API ключ, полученный от BotFather и Ваш логин Телеграм в файл \"/opt/etc/telegram4kvas/telegram_bot_config.py\"\n\nПосле чего выполните команду \"/opt/etc/init.d/S98telegram4kvas start\" для запуска бота\n\n"
