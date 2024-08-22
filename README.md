@@ -8,11 +8,13 @@ curl -OLf https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/install.s
 ```
 # Настройка
 Для создания бота напишите в https://t.me/BotFather команду /newbot и выберите название для бота. В ответном сообщении выполучите API ключ
+
 Откройте файл /opt/etc/telegram4kvas/telegram_bot.py
 ```
 nano /opt/etc/telegram4kvas/telegram_bot.py
 ```
 В параметр **token** необходимо ввести ключ, полученный от @BotFather.
+
 В параметр **usernames** необходимо ввести Ваш логин Телеграм
 # Запуск
 Бот запускается командой 
