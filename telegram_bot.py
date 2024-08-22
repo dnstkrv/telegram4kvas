@@ -131,7 +131,7 @@ def bot_message(message):
                 
             if message.text == 'Обновить бота':
                 bot.send_message(message.chat.id, 'Запущено обновление бота', reply_markup=serviceMenu) 
-                os.system('curl -o /opt/tmp/upgrade.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/upgrade.sh && sh /opt/tmp/upgrade.sh')
+                os.system('curl -o /opt/upgrade.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/upgrade.sh && sh /opt/upgrade.sh && rm /opt/upgrade.sh')
                 return
 
             if message.text == "Назад":
