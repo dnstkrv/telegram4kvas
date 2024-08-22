@@ -1,3 +1,59 @@
 #!/bin/sh
-[ "$1" != "start" ] && exit 0
-python3 /opt/etc/telegram4kvas/telegram_bot.py &
+
+script_status ()
+{
+		ret=$(ps | grep 'python3 /opt/etc/telegram4kvas/telegram_bot.py' | wc -l)
+		if [ "$ret" -eq 1 ]
+		then
+		return 1
+		else 
+		return 0
+		fi;
+}
+
+start()
+{
+        python3 /opt/etc/telegram4kvas/telegram_bot.py & 
+		echo Bot start
+}
+
+stop()
+{
+        pid_to_kill=$(ps -w | grep 'python3 /opt/etc/telegram4kvas/telegram_bot.py' | grep -v 'grep' | cut -d' ' -f1)
+			[ -n "${pid_to_kill}" ] && kill -9 "${pid_to_kill}" &> /dev/null
+}
+case "$1" in
+        start)
+                if script_status
+                then
+                        echo Bot already running
+                else
+                        start
+                fi
+                ;;
+        stop)
+                if script_status
+                then
+                        stop
+                else
+                        echo Bot is not running
+                fi
+                ;;
+        status)
+                if script_status
+                then
+                        echo Bot already running
+                else
+                        echo Bot is not running
+                fi
+                ;;
+
+        restart)
+                stop
+                sleep 3
+                start
+                ;;
+        *)
+                echo "Usage: $0 {start|stop|restart|status}"
+                ;;
+esac
