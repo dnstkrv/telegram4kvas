@@ -40,12 +40,13 @@ def bot_message(message):
         serviceMenu = types.ReplyKeyboardMarkup(resize_keyboard=True)
         s1 = types.KeyboardButton('Запустить test')
         s2 = types.KeyboardButton('Запустить debug')
-        s3 = types.KeyboardButton('Перезагрузить роутер')
-        s4 = types.KeyboardButton('Обновить бота')
+        s3 = types.KeyboardButton('Запустить reset')
+        s4 = types.KeyboardButton('Перезагрузить роутер')
+        s5 = types.KeyboardButton('Обновить бота')
         backward = types.KeyboardButton('Назад')
         serviceMenu.add(s1, s2)
         serviceMenu.add(s3, s4)
-        serviceMenu.add(backward)
+        serviceMenu.add(s5, backward)
         
         hostsMenu = types.ReplyKeyboardMarkup(resize_keyboard=True)
         h1 = types.KeyboardButton("Добавить хост")
@@ -117,7 +118,7 @@ def bot_message(message):
                         tempf.seek(0)
                         a = tempf.read().decode('utf-8')
                         #Удаляем лишние символы и отправляем ответ
-                        bot.send_message(message.chat.id, a.replace('-', '').replace('[33m', '').replace('[m', '').replace('[10D', '').replace('[1;32m', ''), reply_markup=hostsMenu)
+                        bot.send_message(message.chat.id, '```\n' + a.replace('-', '').replace('[33m', '').replace('[m', '').replace('[10D', '').replace('[1;32m', '') + '```', parse_mode='MarkdownV2', reply_markup=hostsMenu)
                 action = ""
 
                 return
@@ -143,7 +144,7 @@ def bot_message(message):
                         tempf.seek(0)
                         a = tempf.read().decode('utf-8')
                         #Удаляем лишние символы и отправляем ответ
-                        bot.send_message(message.chat.id, a.replace('-', '').replace('[1;31m', '').replace('[33m', '').replace('[m', '').replace('[8D', '').replace('[1;32m', ''), reply_markup=hostsMenu)
+                        bot.send_message(message.chat.id, '```\n' + a.replace('-', '').replace('[1;31m', '').replace('[33m', '').replace('[m', '').replace('[8D', '').replace('[1;32m', '') + '```', parse_mode='MarkdownV2', reply_markup=hostsMenu)
                 action = ""
 
                 return
@@ -176,7 +177,9 @@ def bot_message(message):
                 return
 
             if message.text == 'Очистить список':
+
                 bot.send_message(message.chat.id, 'Если вы уверены, что хотите удалить все хосты, отправьте /removeall', reply_markup=hostsMenu)
+                
                 return
 
             if message.text == '/removeall':
@@ -188,44 +191,66 @@ def bot_message(message):
                     tempf.seek(0)
                     a = tempf.read().decode('utf-8')
                     #Удаляем лишние символы и отправляем ответ
-                    bot.send_message(message.chat.id, a.replace(' [8D', '').replace('[8D', '').replace('Список разблокировки будет полностью очищен. Уверены?', '').replace('-', '').replace('[1;32m', '').replace('[m', ''), reply_markup=hostsMenu)
+                    bot.send_message(message.chat.id, '```\n' + a.replace(' [8D', '').replace('[8D', '').replace('Список разблокировки будет полностью очищен. Уверены?', '').replace('-', '').replace('[1;32m', '').replace('[m', '') + '```', parse_mode='MarkdownV2', reply_markup=hostsMenu)
                     tempf.close()
+                    bot.send_document(message.chat.id, open('/opt/etc/.kvas/backup/hosts.list', 'rb'), reply_markup=hostsMenu)
 
                 return
 
             if message.text == 'Импорт':
-                bot.send_message(message.chat.id, 'Пришлите файл для импорта в формате, который [поддерживает](https://github.com/qzeleza/kvas/wiki/%D0%9E%D0%BF%D0%B8%D1%81%D0%B0%D0%BD%D0%B8%D0%B5-%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4#%D1%83%D0%BF%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5-%D1%8D%D0%BA%D1%81%D0%BF%D0%BE%D1%80%D1%82%D0%BE%D0%BC%D0%B8%D0%BC%D0%BF%D0%BE%D1%80%D1%82%D0%BE%D0%BC) КВАС', parse_mode='MarkdownV2', reply_markup=hostsMenu)
+
+                bot.send_message(message.chat.id, 'Пришлите файл для импорта в формате, который [поддерживает](https://github.com/qzeleza/kvas/wiki/%D0%9E%D0%BF%D0%B8%D1%81%D0%B0%D0%BD%D0%B8%D0%B5-%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4#%D1%83%D0%BF%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5-%D1%8D%D0%BA%D1%81%D0%BF%D0%BE%D1%80%D1%82%D0%BE%D0%BC%D0%B8%D0%BC%D0%BF%D0%BE%D1%80%D1%82%D0%BE%D0%BC) *КВАС*', parse_mode='MarkdownV2', reply_markup=hostsMenu)
                 action = 'import'
+
                 return
 
             if message.text == 'Экспорт':
-                bot.send_message(message.chat.id, 'Файл kvas.export готовится к отправке', reply_markup=serviceMenu) 
+
+                bot.send_message(message.chat.id, 'Файл *kvas.export* готовится к отправке', parse_mode='MarkdownV2', reply_markup=hostsMenu) 
                 src = '/opt/kvas.export'
                 debug = subprocess.Popen(['kvas', 'export', src])
                 debug.wait()
                 bot.send_document(message.chat.id, open(src, 'rb'), reply_markup=hostsMenu)
+
                 return
 
             if message.text == 'Запустить test':
-                bot.send_message(message.chat.id, 'Тест запущен, ответа не будет, просто подождите пару минут :)', reply_markup=serviceMenu)
+
+                bot.send_message(message.chat.id, 'Тест запущен, ожидайте несколько минут', reply_markup=serviceMenu)
                 subprocess.Popen(['sed', '-i', '/\tipset_site_visit_check/s/^/#\ /', '/opt/apps/kvas/bin/libs/check'])
-                os.system('kvas test') #временная мера
-                #with tempfile.TemporaryFile() as tempf:
-                    #test = subprocess.Popen(['kvas', 'test'], stdout=tempf)
-                    #test.wait()
-                    #tempf.seek(0)
-                    #a = tempf.read().decode('utf-8')
+                #os.system('kvas test') #временная мера
+                with tempfile.TemporaryFile() as tempf:
+                    test = subprocess.Popen(['kvas', 'test'], stdout=tempf)
+                    test.wait()
+                    tempf.seek(0)
+                    a = tempf.read().decode('utf-8').replace('[10D', '').replace('[9D', '').replace('[14D', '').replace('[1;32m', '').replace('[1;31m', '').replace('[m', '').replace('[8D', '').replace('[11D', '').replace('[6D', '').replace('[36m', '').replace('[12D', '')
+                    if len(a) > 4096:
+                        for x in range(0, len(a), 4096):
+                            bot.send_message(message.chat.id, '```\n' + a[x:x + 4096] + '```', parse_mode='MarkdownV2')
                     #Удаляем лишние символы и отправляем ответ
-                    #bot.send_message(message.chat.id, tempf.read(), reply_markup=hostsMenu)
-                    #tempf.close()
+                    bot.send_message(message.chat.id, tempf.read(), reply_markup=hostsMenu)
+                    tempf.close()
+
                 return
 
             if message.text == 'Запустить debug':
 
-                bot.send_message(message.chat.id, 'Файл kvas.debug готовится к отправке', reply_markup=serviceMenu) 
+                bot.send_message(message.chat.id, 'Файл `kvas.debug` готовится к отправке', parse_mode='MarkdownV2', reply_markup=serviceMenu) 
                 debug = subprocess.Popen(["kvas", "debug", "kvas.debug"])
                 debug.wait()
                 bot.send_document(message.chat.id, open(r'/opt/root/kvas.debug', 'rb'), reply_markup=serviceMenu)
+
+            if message.text == 'Запустить reset':
+
+                bot.send_message(message.chat.id, 'Запущена команда `kvas reset`', parse_mode='MarkdownV2', reply_markup=serviceMenu)
+                with tempfile.TemporaryFile() as tempf:
+                        cmdReset = subprocess.Popen(['kvas', 'reset'], stdout=tempf)
+                        cmdReset.wait()
+                        tempf.seek(0)
+                        a = tempf.read().decode('utf-8')
+                        #Удаляем лишние символы и отправляем ответ
+                        bot.send_message(message.chat.id, '```\n' + a.replace('-', '').replace('[9D', '').replace('[1;31m', '').replace('[33m', '').replace('[m', '').replace('[8D', '').replace('[1;32m', '') + '```', parse_mode='MarkdownV2', reply_markup=serviceMenu)
+                
 
                 
             if message.text == 'Обновить бота':
@@ -249,7 +274,7 @@ def bot_message(message):
 
             if message.text == 'На чай автору бота':
 
-                bot.send_message(message.chat.id, 'МИР `2202201523445100`, [Кошелек ЮМани](https://yoomoney.ru/to/410013576101136)', parse_mode='Markdown', reply_markup=helpMenu)
+                bot.send_message(message.chat.id, 'МИР `2202201523445100`' + '\n' + '[Кошелек ЮМани](https://yoomoney.ru/to/410013576101136)', parse_mode='Markdown', reply_markup=helpMenu)
 
                 return
 
@@ -267,6 +292,7 @@ def bot_message(message):
                 return
 
     except Exception as error:
+
         file = open("/opt/error.log", "w")
         file.write(str(error))
         file.close()
@@ -289,7 +315,7 @@ def bot_document(message):
             importProc.wait()
             tempf.seek(0)
             a = tempf.read().decode('utf-8')
-            bot.send_message(message.chat.id, a.replace('[9D', '').replace('[1;32m', '').replace('[33m69', '').replace('[m', '').replace('-', ''))
+            bot.send_message(message.chat.id, '```\n' + a.replace('[9D', '').replace('[1;32m', '').replace('[33m69', '').replace('[m', '') + '```'.replace('-', ''))
         os.system("awk 'NF > 0' /opt/etc/hosts.list > /opt/etc/hostsb.list && cp /opt/etc/hostsb.list /opt/etc/hosts.list && rm /opt/etc/hostsb.list")
         #os.system('rm ' + src)
     else:
