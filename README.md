@@ -29,8 +29,9 @@ nano /opt/etc/telegram4kvas/telegram_bot_config.py
 ```
 /opt/etc/init.d/S98telegram4kvas start
 ```
-# Прочее
-На чай автору бота
-```
-МИР 2202201523445100
-```
+# На чай автору бота
+
+**МИР** 2202201523445100
+
+[Кошелек ЮМани](https://yoomoney.ru/to/410013576101136) 
+
