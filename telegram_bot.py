@@ -18,9 +18,11 @@ action = ""
 def start(message):
 
     if (message.from_user.username not in usernames) and (message.from_user.id not in userid):
+
         bot.send_message(message.chat.id, 'Вы не авторизованы, внесите свой логин или ID в список')
 
         return
+
     startMenu = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton("Управление хостами")
     item2 = types.KeyboardButton("Сервис")
@@ -223,6 +225,7 @@ def bot_message(message):
                     test = subprocess.Popen(['kvas', 'test'], stdout=tempf)
                     test.wait()
                     tempf.seek(0)
+                    #Удаляем лишние символы
                     a = tempf.read().decode('utf-8').replace('[10D', '').replace('[9D', '').replace('[14D', '').replace('[1;32m', '').replace('[1;31m', '').replace('[m', '').replace('[8D', '').replace('[11D', '').replace('[6D', '').replace('[36m', '').replace('[12D', '')
                     if len(a) > 4096:
                         for x in range(0, len(a), 4096):
