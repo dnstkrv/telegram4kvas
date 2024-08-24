@@ -266,11 +266,19 @@ def handle_import(message: types.Message):
         subprocess.Popen(["kvas", "import", src], stdout=tempf).wait()
         tempf.seek(0)
         output = clean_string(tempf.read().decode("utf-8"))
-        bot.send_message(
-            message.chat.id,
-            mcode("\n" + output + "\n"),
-            parse_mode="MarkdownV2",
-        )
+        if len(output) > 4096:
+            for x in range(0, len(output), 4096):
+                bot.send_message(
+                    message.chat.id,
+                    mcode("\n" + output[x : x + 4096] + "\n"),
+                    parse_mode="MarkdownV2",
+                )
+        else:
+            bot.send_message(
+                message.chat.id,
+                mcode("\n" + output + "\n"),
+                parse_mode="MarkdownV2",
+                )
 
     os.system(
         "awk 'NF > 0' /opt/etc/hosts.list > /opt/etc/hostsb.list && cp /opt/etc/hostsb.list /opt/etc/hosts.list && rm /opt/etc/hostsb.list"
@@ -367,8 +375,8 @@ def run_debug(message: types.Message):
         parse_mode="MarkdownV2",
     )
     subprocess.Popen(["kvas", "debug", "/opt/root/kvas.debug"]).wait()
-    debug_file = InputFile("/opt/root/kvas.debug", file_name="kvas_debug.txt")
-    bot.send_document(message.chat.id, debug_file)
+    debug_file = InputFile("/opt/root/kvas.debug")
+    bot.send_document(message.chat.id, debug_file, parse_mode="MarkdownV2")
 
 
 @bot.message_handler(regexp="Запустить reset", chat_types=["private"])
