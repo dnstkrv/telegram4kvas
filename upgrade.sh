@@ -10,6 +10,7 @@ curl -o /opt/etc/init.d/S98telegram4kvas https://raw.githubusercontent.com/dnstk
 
 chmod +x /opt/etc/init.d/S98telegram4kvas
 
+
 logger -s -t telegram4kvas 'Бот обновлен'
 
 /opt/etc/init.d/S98telegram4kvas start

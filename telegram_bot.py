@@ -161,6 +161,7 @@ def handle_add_host(message: types.Message):
             tempf.seek(0)
             output = tempf.read().decode("utf-8")
             output_clean = clean_string(output)
+
             bot.send_message(
                 message.chat.id,
                 mcode("\n" + output_clean + "\n"),
@@ -208,6 +209,7 @@ def list_hosts(message: types.Message):
     else:
         sites.sort()
         response = mcode("\r".join(sites))
+
         if len(response) > 4096:
             for x in range(0, len(response), 4096):
                 bot.send_message(
@@ -365,8 +367,8 @@ def run_debug(message: types.Message):
         parse_mode="MarkdownV2",
     )
     subprocess.Popen(["kvas", "debug", "/opt/root/kvas.debug"]).wait()
-    debug_file = InputFile("/opt/root/kvas.debug")
-    bot.send_document(message.chat.id, debug_file, parse_mode="MarkdownV2")
+    debug_file = InputFile("/opt/root/kvas.debug", file_name="kvas_debug.txt")
+    bot.send_document(message.chat.id, debug_file)
 
 
 @bot.message_handler(regexp="Запустить reset", chat_types=["private"])

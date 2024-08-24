@@ -6,22 +6,17 @@ Telegram bot for [KVAS](https://github.com/qzeleza/kvas) by [qzeleza](https://gi
 ```
 curl -OLf https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/install.sh && sh install.sh
 ```
-# Настройка
-Для создания бота напишите в [@BotFather](https://t.me/BotFather) команду /newbot и выберите название для бота. В ответном сообщении выполучите API ключ
+В конце установки скрипт запросит у Вас **API-токен**, **логин** и **UserID**. Вводите их без кавычек.
 
-Откройте файл /opt/etc/telegram4kvas/telegram_bot.py
-```
-nano /opt/etc/telegram4kvas/telegram_bot_config.py
-```
-В параметр **token** необходимо ввести ключ, полученный от @BotFather. Ключ должен быть в 'кавычках'
+Для создания бота напишите в [@BotFather](https://t.me/BotFather) команду **/newbot** и выберите название для бота. В ответном сообщении вы получите API-токен
 
-В параметр **usernames** вносится Ваш логин Телеграм. Логин должен быть в кавычках со ['скобками']
+Для получения UserID напишите боту [@UserInfoBot](https://t.me/userinfobot)
 
-В параметр **userid** вносится ваш UserId. UserID должен быть в [скобках], его можно получить написав боту [@UserInfoBot](https://t.me/userinfobot)
+Конфигурация хранится в файле **/opt/etc/telegram4kvas/telegram_bot_config.py**
 
 ***Внимание***
 
-Необязательно вносить и логин и UserId, достаточно чего-то одного
+Не обязательно вносить и логин и UserId, достаточно чего-то одного
 
 
 # Запуск
