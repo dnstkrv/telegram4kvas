@@ -5,14 +5,12 @@ import tempfile
 import telebot
 from telebot import types
 from telebot.handler_backends import BaseMiddleware, CancelUpdate
-from telebot.storage import StateMemoryStorage
 from telebot.types import InputFile
 
 import telegram_bot_config
 
 bot = telebot.TeleBot(
     telegram_bot_config.token,
-    state_storage=StateMemoryStorage(),
     use_class_middlewares=True,
 )
 
@@ -60,7 +58,9 @@ def hosts_message(message: types.Message):
     ]
     keyboard.add(*buttons)
     bot.send_message(
-        message.chat.id, "Панель управления хостами", reply_markup=keyboard
+        message.chat.id,
+        "Панель управления хостами",
+        reply_markup=keyboard,
     )
 
 
@@ -76,7 +76,11 @@ def service_message(message: types.Message):
         types.KeyboardButton("Назад"),
     ]
     keyboard.add(*buttons)
-    bot.send_message(message.chat.id, "Сервисное меню", reply_markup=keyboard)
+    bot.send_message(
+        message.chat.id,
+        "Сервисное меню",
+        reply_markup=keyboard,
+    )
 
 
 @bot.message_handler(regexp="Добавить хост", chat_types=["private"])
@@ -113,8 +117,6 @@ def clean_string(text: str) -> str:
         .replace("[6D", "")
         .replace("[12D", "")
         .replace("[1;31m", "")
-        .replace("", "")
-        .replace("", "")
     )
 
 
@@ -233,7 +235,7 @@ def import_prompt(message: types.Message):
 def handle_import(message: types.Message):
     file_info = bot.get_file(message.document.file_id)
     downloaded_file = bot.download_file(file_info.file_path)
-    src = "/opt/kvastelegram.import"  # Может стоит писать в /tmp
+    src = "/opt/kvastelegram.import"
     with open(src, "wb") as file_import:
         file_import.write(downloaded_file)
 
@@ -242,7 +244,9 @@ def handle_import(message: types.Message):
         tempf.seek(0)
         output = clean_string(tempf.read().decode("utf-8"))
         bot.send_message(
-            message.chat.id, f"```\n{output}\n```", parse_mode="MarkdownV2"
+            message.chat.id,
+            f"```\n{output}\n```",
+            parse_mode="MarkdownV2",
         )
 
     os.system(
@@ -290,7 +294,9 @@ def run_test(message: types.Message):
                 )
         else:
             bot.send_message(
-                message.chat.id, f"```\n{output}\n```", parse_mode="MarkdownV2"
+                message.chat.id,
+                f"```\n{output}\n```",
+                parse_mode="MarkdownV2",
             )
 
 
@@ -311,7 +317,9 @@ def run_reset(message: types.Message):
         tempf.seek(0)
         output = clean_string(tempf.read().decode("utf-8"))
         bot.send_message(
-            message.chat.id, f"```\n{output}\n```", parse_mode="MarkdownV2"
+            message.chat.id,
+            f"```\n{output}\n```",
+            parse_mode="MarkdownV2",
         )
 
 
