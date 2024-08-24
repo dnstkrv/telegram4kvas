@@ -26,4 +26,17 @@ curl -o /opt/etc/init.d/S98telegram4kvas https://raw.githubusercontent.com/dnstk
 
 chmod +x /opt/etc/init.d/S98telegram4kvas
 
-echo -e "\n\nВнесите API ключ, полученный от BotFather и Ваш логин Телеграм в файл \"/opt/etc/telegram4kvas/telegram_bot_config.py\"\n\nПосле чего выполните команду \"/opt/etc/init.d/S98telegram4kvas start\" для запуска бота\n\n"
+config_file="/opt/etc/telegram4kvas/telegram_bot_config.py"
+echo -e "\nВведите API ключ, полученный от BotFather:"
+read api
+sed -i "s/\(token = \).*/\1\'${api}\'/" "${config_file}"
+
+echo -e "\nВведите Ваш логин телеграм, например dnstkrv:"
+read username
+sed -i "s/\(usernames = \[\).*/\1\'${username}\'\]/" "${config_file}"
+
+echo -e "\nВведите Ваш логин userID (Необязательно, достаточно логина):"
+read userID
+sed -i "s/\(userid = \[\).*/\1${userID}\]/" "${config_file}"
+
+echo -e "\nИзменения сохранены в файл /opt/etc/telegram4kvas/telegram_bot_config.py"
