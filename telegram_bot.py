@@ -4,10 +4,13 @@ import tempfile
 
 import telebot
 from telebot import types
+from telebot.formatting import mbold, mcode, mlink
 from telebot.handler_backends import BaseMiddleware, CancelUpdate
 from telebot.types import InputFile
 
 import telegram_bot_config
+
+user_states = {}
 
 bot = telebot.TeleBot(
     telegram_bot_config.token,
@@ -72,6 +75,7 @@ def service_message(message: types.Message):
         types.KeyboardButton("Запустить debug"),
         types.KeyboardButton("Запустить reset"),
         types.KeyboardButton("Перезагрузить роутер"),
+        types.KeyboardButton("Терминал"),
         types.KeyboardButton("Обновить бота"),
         types.KeyboardButton("Назад"),
     ]
@@ -102,6 +106,20 @@ def delete_host_prompt(message: types.Message):
     )
     bot.register_next_step_handler(answer, handle_delete_host)
 
+@bot.message_handler(regexp="Терминал", chat_types=["private"])
+def custom_command_prompt(message: types.Message):
+    user_states[message.chat.id] = True
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    button = [
+        types.KeyboardButton("Назад"),
+    ]
+    keyboard.add(*button)
+    answer = bot.send_message(
+        message.chat.id,
+        "Вы вошли в режим терминала. Вы можете писать любые команды, не требующие интерактива(Например, cat /opt/etc/kvas.conf, ps | grep bot). Для выхода из режима терминала нажмите Назад",
+        reply_markup=keyboard,
+    )
+    bot.register_next_step_handler(answer, custom_command)
 
 def clean_string(text: str) -> str:
     return (
@@ -110,6 +128,7 @@ def clean_string(text: str) -> str:
         .replace("[m", "")
         .replace("[1;32mВ", "")
         .replace("[1;32m", "")
+        .replace("[1;31m", "")
         .replace("[8D", "")
         .replace("[10D", "")
         .replace("[9D", "")
@@ -117,6 +136,8 @@ def clean_string(text: str) -> str:
         .replace("[6D", "")
         .replace("[12D", "")
         .replace("[1;31m", "")
+        .replace("[36m", "")
+        .replace("[14D", "")
     )
 
 
@@ -142,7 +163,7 @@ def handle_add_host(message: types.Message):
             output_clean = clean_string(output)
             bot.send_message(
                 message.chat.id,
-                f"```\n{output_clean}\n```",
+                mcode("\n" + output_clean + "\n"),
                 parse_mode="MarkdownV2",
                 reply_markup=keyboard,
             )
@@ -170,7 +191,7 @@ def handle_delete_host(message: types.Message):
             output_clean = clean_string(output)
             bot.send_message(
                 message.chat.id,
-                f"```\n{output_clean}\n```",
+                mcode("\n" + output_clean + "\n"),
                 parse_mode="MarkdownV2",
                 reply_markup=keyboard,
             )
@@ -186,7 +207,7 @@ def list_hosts(message: types.Message):
         bot.send_message(message.chat.id, "Список пуст")
     else:
         sites.sort()
-        response = "```\n" + "\n".join(sites) + "\n```"
+        response = mcode("\r".join(sites))
         if len(response) > 4096:
             for x in range(0, len(response), 4096):
                 bot.send_message(
@@ -209,13 +230,13 @@ def remove_all_hosts(message: types.Message):
     with tempfile.TemporaryFile() as tempf:
         subprocess.Popen(['echo "Y" | kvas purge'], shell=True, stdout=tempf).wait()
         tempf.seek(0)
-        output = (
+        output = clean_string(
             tempf.read()
             .decode("utf-8")
             .replace("Список разблокировки будет полностью очищен. Уверены?", "")
         )
         bot.send_message(
-            message.chat.id, f"```\n{output}\n```", parse_mode="MarkdownV2"
+            message.chat.id, mcode("\n" + output + "\n"), parse_mode="MarkdownV2"
         )
 
     backup_file = InputFile("/opt/etc/.kvas/backup/hosts.list")
@@ -226,7 +247,7 @@ def remove_all_hosts(message: types.Message):
 def import_prompt(message: types.Message):
     answer = bot.send_message(
         message.chat.id,
-        "Пришлите файл для импорта в формате, который [поддерживает](https://github.com/qzeleza/kvas/wiki/...) *КВАС*",
+        f"Пришлите файл для импорта в формате, который {mlink('поддерживает', 'https://github.com/qzeleza/kvas/wiki')} {mbold('КВАС')}",
         parse_mode="MarkdownV2",
     )
     bot.register_next_step_handler(answer, handle_import)
@@ -245,7 +266,7 @@ def handle_import(message: types.Message):
         output = clean_string(tempf.read().decode("utf-8"))
         bot.send_message(
             message.chat.id,
-            f"```\n{output}\n```",
+            mcode("\n" + output + "\n"),
             parse_mode="MarkdownV2",
         )
 
@@ -256,10 +277,10 @@ def handle_import(message: types.Message):
 
 @bot.message_handler(regexp="Экспорт", chat_types=["private"])
 def export_hosts(message: types.Message):
-    src = "/opt/kvas.export"
+    src = "/opt/etc/.kvas/backup/kvas_export.txt"
     subprocess.Popen(["kvas", "export", src]).wait()
-    export_file = InputFile(src)
-    bot.send_document(message.chat.id, export_file)
+    #export_file = InputFile(src)
+    bot.send_document(message.chat.id, open(src, 'rb'))
 
 
 @bot.message_handler(regexp="Перезагрузить роутер", chat_types=["private"])
@@ -267,6 +288,42 @@ def reboot_router(message: types.Message):
     bot.send_message(message.chat.id, "Роутер перезагружается")
     subprocess.Popen(["reboot"])
 
+@bot.message_handler(func=lambda message: message.chat.id in user_states and user_states[message.chat.id], chat_types=["private"])
+def custom_command(message: types.Message):
+    interrupt_command = ["Отмена", "отмена", "Назад"]
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    buttons = [
+        types.KeyboardButton("Запустить test"),
+        types.KeyboardButton("Запустить debug"),
+        types.KeyboardButton("Запустить reset"),
+        types.KeyboardButton("Перезагрузить роутер"),
+        types.KeyboardButton("Терминал"),
+        types.KeyboardButton("Обновить бота"),
+        types.KeyboardButton("Назад"),
+    ]
+    keyboard.add(*buttons)
+    if message.text in interrupt_command:
+        user_states.pop(message.chat.id)
+        bot.send_message(message.chat.id, "Вы вышли из режима терминала.", reply_markup=keyboard)
+    else:
+        with tempfile.TemporaryFile() as tempf:
+            output_proc = subprocess.Popen([message.text], shell = True, stdout=tempf)
+            output_proc.wait()
+            tempf.seek(0)
+            output = tempf.read().decode("utf-8")
+            if len(output) > 4096:
+                for x in range(0, len(output), 4096):
+                    bot.send_message(
+                        message.chat.id,
+                        mcode("\n" + output[x : x + 4096] + "\n"),
+                        parse_mode="MarkdownV2",
+                    )
+            else:
+                bot.send_message(
+                    message.chat.id,
+                    mcode("\n" + output + "\n"),
+                    parse_mode="MarkdownV2",
+                    )
 
 @bot.message_handler(regexp="Запустить test", chat_types=["private"])
 def run_test(message: types.Message):
@@ -289,20 +346,24 @@ def run_test(message: types.Message):
             for x in range(0, len(output), 4096):
                 bot.send_message(
                     message.chat.id,
-                    f"```\n{output[x:x + 4096]}\n```",
+                    mcode("\n" + output[x : x + 4096] + "\n"),
                     parse_mode="MarkdownV2",
                 )
         else:
             bot.send_message(
                 message.chat.id,
-                f"```\n{output}\n```",
+                mcode("\n" + output + "\n"),
                 parse_mode="MarkdownV2",
             )
 
 
 @bot.message_handler(regexp="Запустить debug", chat_types=["private"])
 def run_debug(message: types.Message):
-    bot.send_message(message.chat.id, "Запущена команда `kvas debug`")
+    bot.send_message(
+        message.chat.id,
+        f"Запущена команда {mcode('kvas debug')}",
+        parse_mode="MarkdownV2",
+    )
     subprocess.Popen(["kvas", "debug", "/opt/root/kvas.debug"]).wait()
     debug_file = InputFile("/opt/root/kvas.debug")
     bot.send_document(message.chat.id, debug_file, parse_mode="MarkdownV2")
@@ -310,7 +371,11 @@ def run_debug(message: types.Message):
 
 @bot.message_handler(regexp="Запустить reset", chat_types=["private"])
 def run_reset(message: types.Message):
-    bot.send_message(message.chat.id, "Запущена команда `kvas reset`")
+    bot.send_message(
+        message.chat.id,
+        f"Запущена команда {mcode('kvas reset')}",
+        parse_mode="MarkdownV2",
+    )
     with tempfile.TemporaryFile() as tempf:
         reset_proc = subprocess.Popen(["kvas", "reset"], stdout=tempf)
         reset_proc.wait()
@@ -318,7 +383,7 @@ def run_reset(message: types.Message):
         output = clean_string(tempf.read().decode("utf-8"))
         bot.send_message(
             message.chat.id,
-            f"```\n{output}\n```",
+            mcode("\n" + output + "\n"),
             parse_mode="MarkdownV2",
         )
 
@@ -340,6 +405,7 @@ try:
     bot.setup_middleware(Middleware())
     bot_me = bot.get_me()
     print(f"Bot @{bot_me.username} running...")
+    os.system(f"logger -s -t telegram4kvas Bot @{bot_me.username} running...")
     bot.infinity_polling(skip_pending=True, timeout=60)
 except Exception as err:
     with open("/opt/error.log", "a") as error_log:
