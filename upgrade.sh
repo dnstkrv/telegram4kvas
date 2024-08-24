@@ -10,4 +10,4 @@ curl -o /opt/etc/init.d/S98telegram4kvas https://raw.githubusercontent.com/dnstk
 
 chmod +x /opt/etc/init.d/S98telegram4kvas
 
-/opt/etc/init.d/S98telegram4kvas start
+/opt/etc/init.d/S98telegram4kvas restart
