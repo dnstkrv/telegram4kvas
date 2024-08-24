@@ -213,7 +213,7 @@ def list_hosts(message: types.Message):
         if len(response) > 4096:
             for x in range(0, len(response), 4096):
                 bot.send_message(
-                    message.chat.id, response[x : x + 4096], parse_mode="MarkdownV2"
+                    message.chat.id, mcode("\n" + output[x : x + 4096] + "\n"), parse_mode="MarkdownV2"
                 )
         else:
             bot.send_message(message.chat.id, response, parse_mode="MarkdownV2")
