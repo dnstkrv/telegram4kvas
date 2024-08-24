@@ -10,6 +10,8 @@ from telebot.types import InputFile
 
 import telegram_bot_config
 
+user_states = {}
+
 bot = telebot.TeleBot(
     telegram_bot_config.token,
     use_class_middlewares=True,
@@ -73,6 +75,7 @@ def service_message(message: types.Message):
         types.KeyboardButton("Запустить debug"),
         types.KeyboardButton("Запустить reset"),
         types.KeyboardButton("Перезагрузить роутер"),
+        types.KeyboardButton("Терминал"),
         types.KeyboardButton("Обновить бота"),
         types.KeyboardButton("Назад"),
     ]
@@ -103,6 +106,20 @@ def delete_host_prompt(message: types.Message):
     )
     bot.register_next_step_handler(answer, handle_delete_host)
 
+@bot.message_handler(regexp="Терминал", chat_types=["private"])
+def custom_command_prompt(message: types.Message):
+    user_states[message.chat.id] = True
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    button = [
+        types.KeyboardButton("Назад"),
+    ]
+    keyboard.add(*button)
+    answer = bot.send_message(
+        message.chat.id,
+        "Вы вошли в режим терминала. Вы можете писать любые команды, не требующие интерактива(Например, cat /opt/etc/kvas.conf, ps | grep bot). Для выхода из режима терминала нажмите Назад",
+        reply_markup=keyboard,
+    )
+    bot.register_next_step_handler(answer, custom_command)
 
 def clean_string(text: str) -> str:
     return (
@@ -191,7 +208,8 @@ def list_hosts(message: types.Message):
         bot.send_message(message.chat.id, "Список пуст")
     else:
         sites.sort()
-        response = mcode("\n".join(sites))
+        response = mcode("\r".join(sites))
+
         if len(response) > 4096:
             for x in range(0, len(response), 4096):
                 bot.send_message(
@@ -261,10 +279,10 @@ def handle_import(message: types.Message):
 
 @bot.message_handler(regexp="Экспорт", chat_types=["private"])
 def export_hosts(message: types.Message):
-    src = "/opt/kvas_export.txt"
+    src = "/opt/etc/.kvas/backup/kvas_export.txt"
     subprocess.Popen(["kvas", "export", src]).wait()
-    export_file = InputFile(src)
-    bot.send_document(message.chat.id, export_file)
+    #export_file = InputFile(src)
+    bot.send_document(message.chat.id, open(src, 'rb'))
 
 
 @bot.message_handler(regexp="Перезагрузить роутер", chat_types=["private"])
@@ -272,6 +290,42 @@ def reboot_router(message: types.Message):
     bot.send_message(message.chat.id, "Роутер перезагружается")
     subprocess.Popen(["reboot"])
 
+@bot.message_handler(func=lambda message: message.chat.id in user_states and user_states[message.chat.id], chat_types=["private"])
+def custom_command(message: types.Message):
+    interrupt_command = ["Отмена", "отмена", "Назад"]
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    buttons = [
+        types.KeyboardButton("Запустить test"),
+        types.KeyboardButton("Запустить debug"),
+        types.KeyboardButton("Запустить reset"),
+        types.KeyboardButton("Перезагрузить роутер"),
+        types.KeyboardButton("Терминал"),
+        types.KeyboardButton("Обновить бота"),
+        types.KeyboardButton("Назад"),
+    ]
+    keyboard.add(*buttons)
+    if message.text in interrupt_command:
+        user_states.pop(message.chat.id)
+        bot.send_message(message.chat.id, "Вы вышли из режима терминала.", reply_markup=keyboard)
+    else:
+        with tempfile.TemporaryFile() as tempf:
+            output_proc = subprocess.Popen([message.text], shell = True, stdout=tempf)
+            output_proc.wait()
+            tempf.seek(0)
+            output = tempf.read().decode("utf-8")
+            if len(output) > 4096:
+                for x in range(0, len(output), 4096):
+                    bot.send_message(
+                        message.chat.id,
+                        mcode("\n" + output[x : x + 4096] + "\n"),
+                        parse_mode="MarkdownV2",
+                    )
+            else:
+                bot.send_message(
+                    message.chat.id,
+                    mcode("\n" + output + "\n"),
+                    parse_mode="MarkdownV2",
+                    )
 
 @bot.message_handler(regexp="Запустить test", chat_types=["private"])
 def run_test(message: types.Message):
