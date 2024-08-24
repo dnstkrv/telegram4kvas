@@ -110,6 +110,7 @@ def clean_string(text: str) -> str:
         .replace("[m", "")
         .replace("[1;32mВ", "")
         .replace("[1;32m", "")
+        .replace("[1;31m", "")
         .replace("[8D", "")
         .replace("[10D", "")
         .replace("[9D", "")
@@ -117,6 +118,8 @@ def clean_string(text: str) -> str:
         .replace("[6D", "")
         .replace("[12D", "")
         .replace("[1;31m", "")
+        .replace("[36m", "")
+        .replace("[14D", "")
     )
 
 
@@ -209,7 +212,7 @@ def remove_all_hosts(message: types.Message):
     with tempfile.TemporaryFile() as tempf:
         subprocess.Popen(['echo "Y" | kvas purge'], shell=True, stdout=tempf).wait()
         tempf.seek(0)
-        output = (
+        output = clean_string(
             tempf.read()
             .decode("utf-8")
             .replace("Список разблокировки будет полностью очищен. Уверены?", "")
@@ -256,7 +259,7 @@ def handle_import(message: types.Message):
 
 @bot.message_handler(regexp="Экспорт", chat_types=["private"])
 def export_hosts(message: types.Message):
-    src = "/opt/kvas.export"
+    src = "/opt/kvas_export.txt"
     subprocess.Popen(["kvas", "export", src]).wait()
     export_file = InputFile(src)
     bot.send_document(message.chat.id, export_file)
@@ -340,6 +343,7 @@ try:
     bot.setup_middleware(Middleware())
     bot_me = bot.get_me()
     print(f"Bot @{bot_me.username} running...")
+    os.system(f"logger -s -t telegram4kvas Bot @{bot_me.username} running...")
     bot.infinity_polling(skip_pending=True, timeout=60)
 except Exception as err:
     with open("/opt/error.log", "a") as error_log:
