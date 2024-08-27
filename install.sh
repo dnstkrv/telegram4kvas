@@ -1,5 +1,12 @@
 #!/bin/sh
 
+freespace=$(df -k | grep opt | awk '/[0-9]%/{print $(NF-2)}')
+freespaceh=$(df -kh | grep opt | awk '/[0-9]%/{print $(NF-2)}')
+if [ $freespace -le 71680 ]; then
+echo 'У вас доступно '$freespaceh', а для установки необходимо минимум 70M'
+exit
+fi;
+
 opkg update &> /dev/null
 
 i=`opkg list-installed | grep kvas | cut -d' ' -f1`
