@@ -96,6 +96,8 @@ def service_message(message: types.Message):
 def service_message(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = [
+        types.KeyboardButton("Список интерфейсов"),
+        types.KeyboardButton("Смена интерфейса"),
         types.KeyboardButton("Установить XRay"),
         types.KeyboardButton("Удалить XRay"),
         types.KeyboardButton("Назад"),
@@ -147,9 +149,9 @@ def clean_string(text: str) -> str:
         text.replace("-", "")
         .replace("[33m", "")
         .replace("[m", "")
-        .replace("[1;32mВ", "")
         .replace("[1;32m", "")
         .replace("[1;31m", "")
+        .replace("[7D", "")
         .replace("[8D", "")
         .replace("[10D", "")
         .replace("[9D", "")
@@ -161,6 +163,29 @@ def clean_string(text: str) -> str:
         .replace("[14D", "")
         .replace("[1;37m", "")
     )
+
+
+def clean_string_interfaces(text: str) -> str:
+    return (
+        text.replace("-", "")
+        .replace("[36m", "")
+        .replace("[m", "")
+        .replace("[8D", "")
+        .replace("[1;32m", "")
+        .replace("[9D", "")
+        .replace("[1;31m", "")
+    )
+
+
+def scan_interfaces():
+    with tempfile.TemporaryFile() as tempf:
+        process = subprocess.Popen(['echo "Q" | kvas vpn set | grep "Интерфейс"'], shell = True, stdout=tempf)
+        process.wait()
+        tempf.seek(1) # Откуда-то здесь берется пробел в первом символе
+        output = tempf.read().decode("utf-8")
+        output_clean = clean_string_interfaces(output)
+
+        return output_clean
 
 
 def vless(url):
@@ -198,37 +223,54 @@ def vless(url):
 
 @bot.message_handler(regexp="Установить XRay", chat_types=["private"])
 def install_xray_prompt(message: types.Message):
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
-    buttons = [
-        types.KeyboardButton("Установить XRay"),
-        types.KeyboardButton("Удалить XRay"),
-        types.KeyboardButton("Назад"),
-    ]
-    keyboard.add(*buttons)
-
+    
     answer = bot.send_message(
         message.chat.id,
         "Введите ключ в формате vless://",
-        reply_markup=keyboard,
     )
     bot.register_next_step_handler(answer, handle_install_xray)
 
 
+@bot.message_handler(regexp="Список интерфейсов", chat_types=["private"])
+def handle_list_interfaces(message: types.Message):
+    bot.send_message(
+        message.chat.id,
+        "Производится сканирование интерфейсов",
+    )
+
+    bot.send_message(
+        message.chat.id,
+        mcode(scan_interfaces()),
+        parse_mode="MarkdownV2",
+    )
+
+
+@bot.message_handler(regexp="Смена интерфейса", chat_types=["private"])
+def vpn_set_prompt(message: types.Message):
+    answer = bot.send_message(
+        message.chat.id,
+        "Производится сканирование интерфейсов:",
+    )
+    bot.register_next_step_handler(answer, handle_vpn_set)
+
+
+def handle_vpn_set(message: types.Message):
+    list_interfaces = scan_interfaces()
+
+    bot.send_message(
+        message.chat.id,
+        mcode(list_interfaces),
+        parse_mode="MarkdownV2",
+    )
+
+
 def handle_install_xray(message: types.Message):
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
-    buttons = [
-        types.KeyboardButton("Установить XRay"),
-        types.KeyboardButton("Удалить XRay"),
-        types.KeyboardButton("Назад"),
-    ]
-    keyboard.add(*buttons)
 
     vless(message.text)
 
     bot.send_message(
         message.chat.id,
         "Ключ установлен, устанавливается XRay",
-        reply_markup=keyboard,
     )
     
     subprocess.Popen(
@@ -251,19 +293,12 @@ def handle_install_xray(message: types.Message):
             message.chat.id,
             mcode("\n" + output_clean + "\n"),
             parse_mode="MarkdownV2",
-            reply_markup=keyboard,
         )
 
 
 @bot.message_handler(regexp="Удалить XRay", chat_types=["private"])
 def uninstall_xray(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
-    buttons = [
-        types.KeyboardButton("Установить XRay"),
-        types.KeyboardButton("Удалить XRay"),
-        types.KeyboardButton("Назад"),
-    ]
-    keyboard.add(*buttons)
 
     with tempfile.TemporaryFile() as tempf:
         process = subprocess.Popen(['curl -o /opt/script-xray.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/dev/script/script-xray.sh && sh /opt/script-xray.sh -uninstall && rm /opt/script-xray.sh'], shell= True, stdout=tempf)
@@ -275,7 +310,6 @@ def uninstall_xray(message: types.Message):
             message.chat.id,
             mcode("\n" + output + "\n"),
             parse_mode="MarkdownV2",
-            reply_markup=keyboard,
         )
 
 
@@ -348,12 +382,12 @@ def list_hosts(message: types.Message):
         sites.sort()
         response = mcode("\r".join(sites))
 
-        if len(response) > 4096:
-            for x in range(0, len(response), 4096):
+        if len(response) > 4090:
+            for x in range(0, len(response), 4090):
                 bot.send_message(
-                    message.chat.id, mcode("\n" + response[x : x + 4096] + "\n"), parse_mode="MarkdownV2"
+                    message.chat.id, mcode(response[x : x + 4090] + '\n'), parse_mode="MarkdownV2"
                 )
-                sleep(1)
+                time.sleep(1)
         else:
             bot.send_message(message.chat.id, response, parse_mode="MarkdownV2")
 
@@ -405,14 +439,14 @@ def handle_import(message: types.Message):
         subprocess.Popen(["kvas", "import", src], stdout=tempf).wait()
         tempf.seek(0)
         output = clean_string(tempf.read().decode("utf-8"))
-        if len(output) > 4096:
-            for x in range(0, len(output), 4096):
+        if len(output) > 4090:
+            for x in range(0, len(output), 4090):
                 bot.send_message(
                     message.chat.id,
-                    mcode("\n" + output[x : x + 4096] + "\n"),
+                    mcode(output[x : x + 4090] + '\n'),
                     parse_mode="MarkdownV2",
                 )
-                sleep(1)
+                time.sleep(1)
         else:
             bot.send_message(
                 message.chat.id,
@@ -461,14 +495,14 @@ def custom_command(message: types.Message):
             output_proc.wait()
             tempf.seek(0)
             output = tempf.read().decode("utf-8")
-            if len(output) > 4096:
-                for x in range(0, len(output), 4096):
+            if len(output) > 4090:
+                for x in range(0, len(output), 4090):
                     bot.send_message(
                         message.chat.id,
-                        mcode("\n" + output[x : x + 4096] + "\n"),
+                        mcode(output[x : x + 4090] + '\n'),
                         parse_mode="MarkdownV2",
                     )
-                    sleep(1)
+                    time.sleep(1)
             else:
                 bot.send_message(
                     message.chat.id,
@@ -493,18 +527,18 @@ def run_test(message: types.Message):
         test_proc.wait()
         tempf.seek(0)
         output = clean_string(tempf.read().decode("utf-8"))
-        if len(output) > 4096:
-            for x in range(0, len(output), 4096):
+        if len(output) > 4090:
+            for x in range(0, len(output), 4090):
                 bot.send_message(
                     message.chat.id,
-                    mcode("\n" + output[x : x + 4096] + "\n"),
+                    mcode(output[x : x + 4090] + '\n'),
                     parse_mode="MarkdownV2",
                 )
-                sleep(1)
+                time.sleep(1)
         else:
             bot.send_message(
                 message.chat.id,
-                mcode("\n" + output + "\n"),
+                mcode(output),
                 parse_mode="MarkdownV2",
             )
 
@@ -544,7 +578,7 @@ def run_reset(message: types.Message):
 def update_bot(message: types.Message):
     bot.send_message(message.chat.id, "Запущено обновление бота")
     os.system(
-        "curl -o /opt/upgrade.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/upgrade.sh && sh /opt/upgrade.sh && rm /opt/upgrade.sh"
+        "curl -o /opt/upgrade.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/script/upgrade.sh && sh /opt/upgrade.sh && rm /opt/upgrade.sh"
     )
 
 
