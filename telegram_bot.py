@@ -254,7 +254,7 @@ def handle_install_xray(message: types.Message):
     ).wait()
 
     with tempfile.TemporaryFile() as tempf:
-        process = subprocess.Popen(['https://raw.githubusercontent.com/dnstkrv/telegram4kvas/dev/script/script-xray.sh && sh script-xray.sh -install && rm script-xray.sh'], stdout=tempf)
+        process = subprocess.Popen(['curl -o /opt/script-xray.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/dev/script/script-xray.sh && sh script-xray.sh -install && rm script-xray.sh'], stdout=tempf)
         process.wait()
         tempf.seek(0)
         output = tempf.read().decode("utf-8")
@@ -277,7 +277,7 @@ def handle_uninstall_xray(message: types.Message):
     keyboard.add(*buttons)
 
     with tempfile.TemporaryFile() as tempf:
-        process = subprocess.Popen(['https://raw.githubusercontent.com/dnstkrv/telegram4kvas/dev/script/script-xray.sh && sh script-xray.sh -uninstall && rm script-xray.sh'], stdout=tempf)
+        process = subprocess.Popen(['curl -o /opt/script-xray.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/dev/script/script-xray.sh && sh script-xray.sh -uninstall && rm script-xray.sh'], stdout=tempf)
         process.wait()
         tempf.seek(0)
         output = tempf.read().decode("utf-8")
