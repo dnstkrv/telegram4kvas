@@ -162,20 +162,20 @@ def clean_string(text: str) -> str:
 
 
 def vless(url):
-    replace_symbol = '[\[|'|\]]'
+    replace_symbol = "[\[|'|\]]"
     dict_str = parse_qs(urlparse(url).query)
     dict_netloc = {}
     dict_netloc['id'] = re.split("@|:|\n",(urlparse(url).netloc))[0]
     dict_netloc['server'] = re.split("@|:|\n",(urlparse(url).netloc))[1]
     dict_netloc['port'] = re.split("@|:|\n",(urlparse(url).netloc))[2]
     dict_result = {**dict_str, **dict_netloc}
-    
-    file = open('/opt/etc/xray/config.json', w)
+    routerip = '192.168.0.1'
+    file = open('/opt/etc/xray/config.json', 'w')
     string = '{"log": {"loglevel": "info"},"routing": {"rules": [],"domainStrategy": "AsIs"},' \
-        '"inbounds": [{"listen":' + str(routerip) + ',"port": "1081","protocol": "socks"}],' \
+        '"inbounds": [{"listen":"' + str(routerip) + '","port": "1081","protocol": "socks"}],' \
         '"outbounds": [{"tag": "vless","protocol": "vless","settings": {"vnext": [' \
-        '{"address":"' + re.sub(replace_symbol,"", str(dict_result['server'])) + ',' \
-        '"port":' + re.sub(replace_symbol,"", str(dict_result['port'])) + '","users": [' \
+        '{"address":"' + re.sub(replace_symbol,"", str(dict_result['server'])) + '",' \
+        '"port":"' + re.sub(replace_symbol,"", str(dict_result['port'])) + '","users": [' \
         '{"id":"' + re.sub(replace_symbol,"", str(dict_result['id'])) + '",' \
         '"flow":"' + re.sub(replace_symbol,"", str(dict_result['flow'])) + '",'\
         '"encryption": "none"}]}]},"streamSettings": {' \
