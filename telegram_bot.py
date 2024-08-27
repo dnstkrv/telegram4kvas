@@ -4,7 +4,6 @@ import tempfile
 import time
 
 import re
-import json
 from urllib.parse import urlparse, parse_qs
 
 import telebot
@@ -189,7 +188,7 @@ def vless(url):
         '"spiderX":"' + re.sub(replace_symbol,"", str(dict_result['spx'])) + '"' \
         '},"tcpSettings": {"header": {"type": "none"}}}}]}'
     with open('/opt/etc/xray/config.json', 'w') as file:
-        json.dump(json_data, file)
+        file.write(json_data)
 
 
 
