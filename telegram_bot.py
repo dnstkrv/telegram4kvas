@@ -174,7 +174,7 @@ def vless(url):
         '"inbounds": [{"listen":"' + str(routerip) + '","port": "1081","protocol": "socks"}],' \
         '"outbounds": [{"tag": "vless","protocol": "vless","settings": {"vnext": [' \
         '{"address":"' + re.sub(replace_symbol,"", str(dict_result['server'])) + '",' \
-        '"port":"' + re.sub(replace_symbol,"", str(dict_result['port'])) + '","users": [' \
+        '"port":' + re.sub(replace_symbol,"", str(dict_result['port'])) + ',"users": [' \
         '{"id":"' + re.sub(replace_symbol,"", str(dict_result['id'])) + '",' \
         '"flow":"' + re.sub(replace_symbol,"", str(dict_result['flow'])) + '",'\
         '"encryption": "none"}]}]},"streamSettings": {' \
