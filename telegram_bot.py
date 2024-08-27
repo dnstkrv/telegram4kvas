@@ -195,10 +195,16 @@ def vless(url):
 
 @bot.message_handler(regexp="Установить xray", chat_types=["private"])
 def install_xray_prompt(message: types.Message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        types.KeyboardButton("Установить xray"),
+        types.KeyboardButton("Назад"),
+    ]
+    keyboard.add(*buttons)
     answer = bot.send_message(
         message.chat.id,
         "Введите ключ в формате vless://",
-        reply_markup=types.ReplyKeyboardRemove(),
+        reply_markup=keyboard,
     )
     bot.register_next_step_handler(answer, handle_install_xray)
 
