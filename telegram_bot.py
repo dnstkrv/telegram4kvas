@@ -96,7 +96,8 @@ def service_message(message: types.Message):
 def service_message(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = [
-        types.KeyboardButton("Установить xray"),
+        types.KeyboardButton("Установить XRay"),
+        types.KeyboardButton("Удалить XRay"),
         types.KeyboardButton("Назад"),
     ]
     keyboard.add(*buttons)
@@ -192,11 +193,29 @@ def vless(url):
 
 
 
-@bot.message_handler(regexp="Установить xray", chat_types=["private"])
+@bot.message_handler(regexp="Установить XRay", chat_types=["private"])
 def install_xray_prompt(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons = [
-        types.KeyboardButton("Установить xray"),
+        types.KeyboardButton("Установить XRay"),
+        types.KeyboardButton("Удалить XRay"),
+        types.KeyboardButton("Назад"),
+    ]
+    keyboard.add(*buttons)
+    answer = bot.send_message(
+        message.chat.id,
+        "Введите ключ в формате vless://",
+        reply_markup=keyboard,
+    )
+    bot.register_next_step_handler(answer, handle_uninstall_xray)
+
+
+@bot.message_handler(regexp="Установить XRay", chat_types=["private"])
+def install_xray_prompt(message: types.Message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        types.KeyboardButton("Установить XRay"),
+        types.KeyboardButton("Удалить XRay"),
         types.KeyboardButton("Назад"),
     ]
     keyboard.add(*buttons)
@@ -212,6 +231,7 @@ def handle_install_xray(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons = [
         types.KeyboardButton("Установить XRay"),
+        types.KeyboardButton("Удалить XRay"),
         types.KeyboardButton("Назад"),
     ]
     keyboard.add(*buttons)
@@ -224,7 +244,7 @@ def handle_install_xray(message: types.Message):
     )
 
     with tempfile.TemporaryFile() as tempf:
-        process = subprocess.Popen(['https://raw.githubusercontent.com/dnstkrv/telegram4kvas/dev/script/script-xray.sh && script-xray.sh && rm script-xray.sh'], stdout=tempf)
+        process = subprocess.Popen(['https://raw.githubusercontent.com/dnstkrv/telegram4kvas/dev/script/script-xray.sh && sh script-xray.sh -install && rm script-xray.sh'], stdout=tempf)
         process.wait()
         tempf.seek(0)
         output = tempf.read().decode("utf-8")
@@ -236,6 +256,28 @@ def handle_install_xray(message: types.Message):
             reply_markup=keyboard,
         )
 
+
+def handle_uninstall_xray(message: types.Message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        types.KeyboardButton("Установить XRay"),
+        types.KeyboardButton("Удалить XRay"),
+        types.KeyboardButton("Назад"),
+    ]
+    keyboard.add(*buttons)
+
+    with tempfile.TemporaryFile() as tempf:
+        process = subprocess.Popen(['https://raw.githubusercontent.com/dnstkrv/telegram4kvas/dev/script/script-xray.sh && sh script-xray.sh -uninstall && rm script-xray.sh'], stdout=tempf)
+        process.wait()
+        tempf.seek(0)
+        output = tempf.read().decode("utf-8")
+
+        bot.send_message(
+            message.chat.id,
+            mcode("\n" + output + "\n"),
+            parse_mode="MarkdownV2",
+            reply_markup=keyboard,
+        )
 
 
 def handle_add_host(message: types.Message):
