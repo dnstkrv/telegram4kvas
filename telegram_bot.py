@@ -171,7 +171,7 @@ def vless(url):
     dict_netloc['port'] = re.split("@|:|\n",(urlparse(url).netloc))[2]
     dict_result = {**dict_str, **dict_netloc}
     routerip = '192.168.0.1'
-    string = '{"log": {"loglevel": "info"},"routing": {"rules": [],"domainStrategy": "AsIs"},' \
+    json_data = '{"log": {"loglevel": "info"},"routing": {"rules": [],"domainStrategy": "AsIs"},' \
         '"inbounds": [{"listen":"' + str(routerip) + '","port": "1081","protocol": "socks"}],' \
         '"outbounds": [{"tag": "vless","protocol": "vless","settings": {"vnext": [' \
         '{"address":"' + re.sub(replace_symbol,"", str(dict_result['server'])) + '",' \
@@ -189,7 +189,7 @@ def vless(url):
         '"spiderX":"' + re.sub(replace_symbol,"", str(dict_result['spx'])) + '"' \
         '},"tcpSettings": {"header": {"type": "none"}}}}]}'
     with open('/opt/etc/xray/config.json', 'w') as file:
-        json.dump(string, write_file)
+        json.dump(json_data, file)
 
 
 
