@@ -1,6 +1,10 @@
 import os
 import subprocess
 import tempfile
+import time
+
+import re
+from urllib.parse import urlparse, parse_qs
 
 import telebot
 from telebot import types
@@ -38,8 +42,9 @@ class Middleware(BaseMiddleware):
 def handle_start(message: types.Message):
     startMenu = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton("Управление хостами")
-    item2 = types.KeyboardButton("Сервис")
-    startMenu.add(item1, item2)
+    item2 = types.KeyboardButton("Управление подключениями")
+    item3 = types.KeyboardButton("Сервис")
+    startMenu.add(item1, item2, item3)
     bot.send_message(
         message.chat.id,
         "Панель управления КВАС",
@@ -83,6 +88,21 @@ def service_message(message: types.Message):
     bot.send_message(
         message.chat.id,
         "Сервисное меню",
+        reply_markup=keyboard,
+    )
+
+
+@bot.message_handler(regexp="Управление подключениями", chat_types=["private"])
+def service_message(message: types.Message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    buttons = [
+        types.KeyboardButton("Установить xray"),
+        types.KeyboardButton("Назад"),
+    ]
+    keyboard.add(*buttons)
+    bot.send_message(
+        message.chat.id,
+        "Управление подключениями",
         reply_markup=keyboard,
     )
 
@@ -138,6 +158,63 @@ def clean_string(text: str) -> str:
         .replace("[1;31m", "")
         .replace("[36m", "")
         .replace("[14D", "")
+    )
+
+
+def vless(url):
+    replace_symbol = '[\[|'|\]]'
+    dict_str = parse_qs(urlparse(url).query)
+    dict_netloc = {}
+    dict_netloc['id'] = re.split("@|:|\n",(urlparse(url).netloc))[0]
+    dict_netloc['server'] = re.split("@|:|\n",(urlparse(url).netloc))[1]
+    dict_netloc['port'] = re.split("@|:|\n",(urlparse(url).netloc))[2]
+    dict_result = {**dict_str, **dict_netloc}
+    
+    file = open('/opt/etc/xray/config.json', w)
+    string = '{"log": {"loglevel": "info"},"routing": {"rules": [],"domainStrategy": "AsIs"},' \
+        '"inbounds": [{"listen":' + str(routerip) + ',"port": "1081","protocol": "socks"}],' \
+        '"outbounds": [{"tag": "vless","protocol": "vless","settings": {"vnext": [' \
+        '{"address":"' + re.sub(replace_symbol,"", str(dict_result['server'])) + ',' \
+        '"port":' + re.sub(replace_symbol,"", str(dict_result['port'])) + '","users": [' \
+        '{"id":"' + re.sub(replace_symbol,"", str(dict_result['id'])) + '",' \
+        '"flow":"' + re.sub(replace_symbol,"", str(dict_result['flow'])) + '",'\
+        '"encryption": "none"}]}]},"streamSettings": {' \
+        '"network":"' + re.sub(replace_symbol,"", str(dict_result['type'])) + '",'\
+        '"security":"' + re.sub(replace_symbol,"", str(dict_result['security'])) + '",' \
+        '"realitySettings": {' \
+        '"publicKey":"' + re.sub(replace_symbol,"", str(dict_result['pbk'])) + '",' \
+        '"fingerprint":"' + re.sub(replace_symbol,"", str(dict_result['fp'])) + '",' \
+        '"serverName":"' + re.sub(replace_symbol,"", str(dict_result['sni'])) + '",' \
+        '"shortId":"' + re.sub(replace_symbol,"", str(dict_result['sid'])) + '",' \
+        '"spiderX":"' + re.sub(replace_symbol,"", str(dict_result['spx'])) + '"' \
+        '},"tcpSettings": {"header": {"type": "none"}}}}]}'
+    file.write(string)
+    file.close()
+
+
+
+@bot.message_handler(regexp="Установить xray", chat_types=["private"])
+def install_xray_prompt(message: types.Message):
+    answer = bot.send_message(
+        message.chat.id,
+        "Введите ключ в формате vless://",
+        reply_markup=types.ReplyKeyboardRemove(),
+    )
+    bot.register_next_step_handler(answer, handle_install_xray)
+
+
+def handle_install_xray(message: types.Message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        types.KeyboardButton("Установить xray"),
+        types.KeyboardButton("Назад"),
+    ]
+    keyboard.add(*buttons)
+    vless(message.text)
+    bot.send_message(
+        message.chat.id,
+        "Ключ установлен",
+        reply_markup=keyboard,
     )
 
 
@@ -215,6 +292,7 @@ def list_hosts(message: types.Message):
                 bot.send_message(
                     message.chat.id, mcode("\n" + response[x : x + 4096] + "\n"), parse_mode="MarkdownV2"
                 )
+                sleep(1)
         else:
             bot.send_message(message.chat.id, response, parse_mode="MarkdownV2")
 
@@ -273,6 +351,7 @@ def handle_import(message: types.Message):
                     mcode("\n" + output[x : x + 4096] + "\n"),
                     parse_mode="MarkdownV2",
                 )
+                sleep(1)
         else:
             bot.send_message(
                 message.chat.id,
@@ -328,6 +407,7 @@ def custom_command(message: types.Message):
                         mcode("\n" + output[x : x + 4096] + "\n"),
                         parse_mode="MarkdownV2",
                     )
+                    sleep(1)
             else:
                 bot.send_message(
                     message.chat.id,
@@ -359,6 +439,7 @@ def run_test(message: types.Message):
                     mcode("\n" + output[x : x + 4096] + "\n"),
                     parse_mode="MarkdownV2",
                 )
+                sleep(1)
         else:
             bot.send_message(
                 message.chat.id,
