@@ -4,6 +4,7 @@ import tempfile
 import time
 
 import re
+import json
 from urllib.parse import urlparse, parse_qs
 
 import telebot
@@ -170,7 +171,6 @@ def vless(url):
     dict_netloc['port'] = re.split("@|:|\n",(urlparse(url).netloc))[2]
     dict_result = {**dict_str, **dict_netloc}
     routerip = '192.168.0.1'
-    file = open('/opt/etc/xray/config.json', 'w')
     string = '{"log": {"loglevel": "info"},"routing": {"rules": [],"domainStrategy": "AsIs"},' \
         '"inbounds": [{"listen":"' + str(routerip) + '","port": "1081","protocol": "socks"}],' \
         '"outbounds": [{"tag": "vless","protocol": "vless","settings": {"vnext": [' \
@@ -188,8 +188,8 @@ def vless(url):
         '"shortId":"' + re.sub(replace_symbol,"", str(dict_result['sid'])) + '",' \
         '"spiderX":"' + re.sub(replace_symbol,"", str(dict_result['spx'])) + '"' \
         '},"tcpSettings": {"header": {"type": "none"}}}}]}'
-    file.write(string)
-    file.close()
+    with open('/opt/etc/xray/config.json', 'w') as file:
+        json.dump(string, write_file)
 
 
 
