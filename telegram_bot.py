@@ -170,7 +170,8 @@ def vless(url):
     dict_netloc['server'] = re.split("@|:|\n",(urlparse(url).netloc))[1]
     dict_netloc['port'] = re.split("@|:|\n",(urlparse(url).netloc))[2]
     dict_result = {**dict_str, **dict_netloc}
-    routerip = subprocess.check_output('/opt/sbin/ip a | grep ": br0:" -A4 | grep 'inet ' | tr -s ' ' | cut -d' ' -f3 | cut -d'/' -f1', shell = True)
+    get_routerip = '/opt/sbin/ip a | grep ": br0:" -A4 | grep "inet "" | tr -s " " | cut -d" " -f3 | cut -d"/" -f1'
+    routerip = subprocess.check_output(get_routerip, shell = True)
     json_data = '{"log": {"loglevel": "info"},"routing": {"rules": [],"domainStrategy": "AsIs"},' \
         '"inbounds": [{"listen":"' + str(routerip) + '","port": "1081","protocol": "socks"}],' \
         '"outbounds": [{"tag": "vless","protocol": "vless","settings": {"vnext": [' \
