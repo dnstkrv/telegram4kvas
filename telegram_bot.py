@@ -169,7 +169,7 @@ def vless(url):
     dict_netloc['server'] = re.split("@|:|\n",(urlparse(url).netloc))[1]
     dict_netloc['port'] = re.split("@|:|\n",(urlparse(url).netloc))[2]
     dict_result = {**dict_str, **dict_netloc}
-    routerip = '192.168.0.1'
+    routerip = subprocess.check_output('/opt/sbin/ip a | grep ": br0:" -A4 | grep 'inet ' | tr -s ' ' | cut -d' ' -f3 | cut -d'/' -f1', shell = True)
     json_data = '{"log": {"loglevel": "info"},"routing": {"rules": [],"domainStrategy": "AsIs"},' \
         '"inbounds": [{"listen":"' + str(routerip) + '","port": "1081","protocol": "socks"}],' \
         '"outbounds": [{"tag": "vless","protocol": "vless","settings": {"vnext": [' \
@@ -211,16 +211,31 @@ def install_xray_prompt(message: types.Message):
 def handle_install_xray(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons = [
-        types.KeyboardButton("Установить xray"),
+        types.KeyboardButton("Установить XRay"),
         types.KeyboardButton("Назад"),
     ]
     keyboard.add(*buttons)
     vless(message.text)
+
     bot.send_message(
         message.chat.id,
-        "Ключ установлен",
+        "Ключ установлен, устанавливается XRay",
         reply_markup=keyboard,
     )
+
+    with tempfile.TemporaryFile() as tempf:
+        process = subprocess.Popen(['https://raw.githubusercontent.com/dnstkrv/telegram4kvas/dev/script/script-xray.sh && script-xray.sh && rm script-xray.sh'], stdout=tempf)
+        process.wait()
+        tempf.seek(0)
+        output = tempf.read().decode("utf-8")
+
+        bot.send_message(
+            message.chat.id,
+            mcode("\n" + output + "\n"),
+            parse_mode="MarkdownV2",
+            reply_markup=keyboard,
+        )
+
 
 
 def handle_add_host(message: types.Message):
