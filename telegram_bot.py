@@ -210,10 +210,10 @@ def list_hosts(message: types.Message):
         sites.sort()
         response = mcode("\r".join(sites))
 
-        if len(response) > 4096:
-            for x in range(0, len(response), 4096):
+        if len(response) > 4090:
+            for x in range(0, len(response), 4090):
                 bot.send_message(
-                    message.chat.id, mcode("\n" + response[x : x + 4096] + "\n"), parse_mode="MarkdownV2"
+                    message.chat.id, mcode(response[x : x + 4090] + "\n"), parse_mode="MarkdownV2"
                 )
         else:
             bot.send_message(message.chat.id, response, parse_mode="MarkdownV2")
@@ -266,11 +266,11 @@ def handle_import(message: types.Message):
         subprocess.Popen(["kvas", "import", src], stdout=tempf).wait()
         tempf.seek(0)
         output = clean_string(tempf.read().decode("utf-8"))
-        if len(output) > 4096:
-            for x in range(0, len(output), 4096):
+        if len(output) > 4090:
+            for x in range(0, len(output), 4090):
                 bot.send_message(
                     message.chat.id,
-                    mcode("\n" + output[x : x + 4096] + "\n"),
+                    mcode(output[x : x + 4090] + "\n"),
                     parse_mode="MarkdownV2",
                 )
         else:
@@ -321,11 +321,11 @@ def custom_command(message: types.Message):
             output_proc.wait()
             tempf.seek(0)
             output = tempf.read().decode("utf-8")
-            if len(output) > 4096:
-                for x in range(0, len(output), 4096):
+            if len(output) > 4090:
+                for x in range(0, len(output), 4090):
                     bot.send_message(
                         message.chat.id,
-                        mcode("\n" + output[x : x + 4096] + "\n"),
+                        mcode(output[x : x + 4090] + "\n"),
                         parse_mode="MarkdownV2",
                     )
             else:
@@ -352,11 +352,11 @@ def run_test(message: types.Message):
         test_proc.wait()
         tempf.seek(0)
         output = clean_string(tempf.read().decode("utf-8"))
-        if len(output) > 4096:
-            for x in range(0, len(output), 4096):
+        if len(output) > 4090:
+            for x in range(0, len(output), 4090):
                 bot.send_message(
                     message.chat.id,
-                    mcode("\n" + output[x : x + 4096] + "\n"),
+                    mcode(output[x : x + 4090] + "\n"),
                     parse_mode="MarkdownV2",
                 )
         else:
