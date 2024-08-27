@@ -194,8 +194,8 @@ def vless(url):
 
 
 
-@bot.message_handler(regexp="Установить XRay", chat_types=["private"])
-def install_xray_prompt(message: types.Message):
+@bot.message_handler(regexp="Удалить XRay", chat_types=["private"])
+def uninstall_xray_prompt(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons = [
         types.KeyboardButton("Установить XRay"),
@@ -243,6 +243,15 @@ def handle_install_xray(message: types.Message):
         "Ключ установлен, устанавливается XRay",
         reply_markup=keyboard,
     )
+    
+    subprocess.Popen(
+        [
+            "sed",
+            "-i",
+            "'s/\"PPTP\"/\"PPTP\",\"Proxy\"/",
+            "/opt/apps/kvas/bin/libs/vpn",
+        ]
+    ).wait()
 
     with tempfile.TemporaryFile() as tempf:
         process = subprocess.Popen(['https://raw.githubusercontent.com/dnstkrv/telegram4kvas/dev/script/script-xray.sh && sh script-xray.sh -install && rm script-xray.sh'], stdout=tempf)
