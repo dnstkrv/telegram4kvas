@@ -181,7 +181,7 @@ def scan_interfaces():
     with tempfile.TemporaryFile() as tempf:
         process = subprocess.Popen(['echo "Q" | kvas vpn set | grep "Интерфейс"'], shell = True, stdout=tempf)
         process.wait()
-        tempf.seek(1) # Откуда-то здесь берется пробел в первом символе
+        tempf.seek(1)
         output = tempf.read().decode("utf-8")
         output_clean = clean_string_interfaces(output)
 
@@ -247,21 +247,23 @@ def handle_list_interfaces(message: types.Message):
 
 @bot.message_handler(regexp="Смена интерфейса", chat_types=["private"])
 def vpn_set_prompt(message: types.Message):
+    list_interfaces = scan_interfaces()
     answer = bot.send_message(
         message.chat.id,
         "Производится сканирование интерфейсов:",
     )
-    bot.register_next_step_handler(answer, handle_vpn_set)
-
-
-def handle_vpn_set(message: types.Message):
-    list_interfaces = scan_interfaces()
 
     bot.send_message(
         message.chat.id,
         mcode(list_interfaces),
         parse_mode="MarkdownV2",
     )
+
+    bot.register_next_step_handler(answer, handle_vpn_set)
+
+
+def handle_vpn_set(message: types.Message):
+
 
 
 def handle_install_xray(message: types.Message):
@@ -298,7 +300,6 @@ def handle_install_xray(message: types.Message):
 
 @bot.message_handler(regexp="Удалить XRay", chat_types=["private"])
 def uninstall_xray(message: types.Message):
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
 
     with tempfile.TemporaryFile() as tempf:
         process = subprocess.Popen(['curl -o /opt/script-xray.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/dev/script/script-xray.sh && sh /opt/script-xray.sh -uninstall && rm /opt/script-xray.sh'], shell= True, stdout=tempf)
