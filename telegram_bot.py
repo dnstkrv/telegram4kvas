@@ -10,7 +10,7 @@ import telebot
 from telebot import types
 from telebot.formatting import mbold, mcode, mlink
 from telebot.handler_backends import BaseMiddleware, CancelUpdate
-from telebot.types import InputFile
+from telebot.types import InputFile, InlineKeyboardMarkup, InlineKeyboardButton
 
 import telegram_bot_config
 
@@ -252,10 +252,10 @@ def vpn_set_prompt(message: types.Message):
         message.chat.id,
         "Производится сканирование интерфейсов:",
     )
-
+    list_interfaces = scan_interfaces()
     bot.send_message(
         message.chat.id,
-        mcode(list_interfaces),
+        mcode(list_interfaces.split()),
         parse_mode="MarkdownV2",
     )
 
