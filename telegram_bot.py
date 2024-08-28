@@ -262,7 +262,7 @@ def vpn_set_prompt(message: types.Message):
     bot.register_next_step_handler(answer, handle_vpn_set)
 
 
-def handle_vpn_set(message: types.Message):
+#def handle_vpn_set(message: types.Message):
 
 
 
