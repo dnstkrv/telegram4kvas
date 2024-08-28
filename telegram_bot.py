@@ -621,9 +621,6 @@ def update_bot(message: types.Message):
     os.system(
         "curl -o /opt/upgrade.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/script/upgrade.sh && sh /opt/upgrade.sh && rm /opt/upgrade.sh"
     )
-    os.system(
-        "curl -o /opt/upgrade.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/upgrade.sh && sh /opt/upgrade.sh && rm /opt/upgrade.sh"
-    )
 
 
 @bot.message_handler(regexp="Назад", chat_types=["private"])
