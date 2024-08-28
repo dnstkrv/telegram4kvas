@@ -177,15 +177,37 @@ def clean_string_interfaces(text: str) -> str:
     )
 
 
-def scan_interfaces():
+def scan_interfaces(param = 'Q'):
+    if (param == 'no_shadowsocks'):
+        command = [f'echo "Q" | kvas vpn set | grep -v "shadowsocks" | grep "Интерфейс" | sed "s/[^И]*//"']  
+    else:
+        command = [f'echo "{param}" | kvas vpn set | grep "Интерфейс" | sed "s/[^И]*//"']
     with tempfile.TemporaryFile() as tempf:
-        process = subprocess.Popen(['echo "Q" | kvas vpn set | grep "Интерфейс"'], shell = True, stdout=tempf)
+        process = subprocess.Popen(command, shell = True, stdout=tempf)
         process.wait()
-        tempf.seek(1)
+        tempf.seek(0)
         output = tempf.read().decode("utf-8")
         output_clean = clean_string_interfaces(output)
 
-        return output_clean
+    return output_clean
+
+
+def make_keyboard_interfaces(list_interfaces):
+    list_interfaces_split = list_interfaces.split()
+    word_seek = "Интерфейс"
+    interface_next = []
+    for word in list_interfaces_split:
+        if word == word_seek:
+            ind = list_interfaces_split.index(word_seek)
+            list_interfaces_split.pop(list_interfaces_split.index(word_seek))
+            interface_next.append(list_interfaces_split[ind])
+
+    keyboard_interfaces = types.InlineKeyboardMarkup()
+    for i in range(0, len(interface_next)):
+        keyboard_interfaces.add(types.InlineKeyboardButton(text=interface_next[i], callback_data=str(i)))
+
+    return keyboard_interfaces
+
 
 
 def vless(url):
@@ -223,7 +245,7 @@ def vless(url):
 
 @bot.message_handler(regexp="Установить XRay", chat_types=["private"])
 def install_xray_prompt(message: types.Message):
-    
+
     answer = bot.send_message(
         message.chat.id,
         "Введите ключ в формате vless://",
@@ -247,34 +269,41 @@ def handle_list_interfaces(message: types.Message):
 
 @bot.message_handler(regexp="Смена интерфейса", chat_types=["private"])
 def vpn_set_prompt(message: types.Message):
-    answer = bot.send_message(
+    bot.send_message(
         message.chat.id,
         "Производится сканирование интерфейсов:",
     )
+    list_interfaces = scan_interfaces('no_shadowsocks')
+    keyboard = make_keyboard_interfaces(list_interfaces)
 
-    list_interfaces = scan_interfaces()
-
-    bot.send_message(
+    answer = bot.send_message(
         message.chat.id,
         mcode(list_interfaces),
         parse_mode="MarkdownV2",
+        reply_markup=keyboard,
     )
-    
-    list_interfaces_split = list_interfaces.split()
-    word_seek = "Интерфейс"
-    interface_next = []
-    for word in list_interfaces_split:    
-        if word == word_seek:
-            ind = list_interfaces_split.index(word_seek)
-            list_interfaces_split.pop(list_interfaces_split.index(word_seek))
-            interface_next.append(list_interfaces_split[ind])
-            
-    for i in range(0, len(interface_next)):
-        keyboard.add(InlineKeyboardButton(interface_next[i].text, callback_data="interface"))
 
-    bot.send_message(message.chat.id,'Выберите интерфейс',reply_markup = keyboard)
+    bot.register_next_step_handler(answer, handle_vpn_set)
 
-    #bot.register_next_step_handler(answer, handle_vpn_set)
+
+@bot.callback_query_handler(func=lambda call: True)
+def handle_vpn_set(call):
+    interface_num = int(call.data) + 2
+    bot.edit_message_reply_markup(call.message.chat.id,
+        message_id = call.message.message_id,
+        reply_markup = '')
+
+    bot.send_message(
+        call.message.chat.id,
+        'Производится выбор интерфейса',
+        parse_mode="MarkdownV2",
+    )
+
+    bot.send_message(
+        call.message.chat.id,
+        mcode(scan_interfaces(interface_num)),
+        parse_mode="MarkdownV2",
+    )
 
 
 def handle_install_xray(message: types.Message):
@@ -602,7 +631,6 @@ def go_back(message: types.Message):
 try:
     bot.setup_middleware(Middleware())
     bot_me = bot.get_me()
-    print(f"Bot @{bot_me.username} running...")
     os.system(f"logger -s -t telegram4kvas Bot @{bot_me.username} running...")
     bot.infinity_polling(skip_pending=True, timeout=60)
 except Exception as err:
