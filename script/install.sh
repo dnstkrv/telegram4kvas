@@ -56,6 +56,8 @@ if [ "$1" = "-install" ]; then
     sed -i "s/\(userid = \[\).*/\1${userID}\]/" "${config_file}"
     
     echo -e "\nИзменения сохранены в файл /opt/etc/telegram4kvas/telegram_bot_config.py"
+
+    /opt/etc/init.d/S98telegram4kvas start
     
     if [ "$1" = "-uninstall" ]; then
     	pip uninstall pip

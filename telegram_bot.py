@@ -22,7 +22,7 @@ bot = telebot.TeleBot(
 )
 
 
-class Middleware(BaseMiddleware):
+class Middleware(BaseMiddleware): #Проверка авторизации
     def __init__(self):
         self.update_types = ["message"]
 
@@ -39,7 +39,7 @@ class Middleware(BaseMiddleware):
 
 
 @bot.message_handler(commands=["start"], chat_types=["private"])
-def handle_start(message: types.Message):
+def handle_start(message: types.Message):                           #Стартовое меню
     startMenu = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton("Управление хостами")
     item2 = types.KeyboardButton("Управление подключениями")
@@ -111,7 +111,7 @@ def service_message(message: types.Message):
 
 
 @bot.message_handler(regexp="Добавить хост", chat_types=["private"])
-def add_host_prompt(message: types.Message):
+def add_host_prompt(message: types.Message):                                            #Добавляем домен
     answer = bot.send_message(
         message.chat.id,
         "Введите домен(или несколько доменов, разделенных пробелом) для добавления:",
@@ -121,7 +121,7 @@ def add_host_prompt(message: types.Message):
 
 
 @bot.message_handler(regexp="Удалить хост", chat_types=["private"])
-def delete_host_prompt(message: types.Message):
+def delete_host_prompt(message: types.Message):                                              #Удаляем домен
     answer = bot.send_message(
         message.chat.id,
         "Введите домен(или несколько доменов, разделенных пробелом) для удаления:",
@@ -130,7 +130,7 @@ def delete_host_prompt(message: types.Message):
     bot.register_next_step_handler(answer, handle_delete_host)
 
 @bot.message_handler(regexp="Терминал", chat_types=["private"])
-def custom_command_prompt(message: types.Message):
+def custom_command_prompt(message: types.Message):                                          #Режим терминала
     user_states[message.chat.id] = True
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     button = [
@@ -144,7 +144,7 @@ def custom_command_prompt(message: types.Message):
     )
     bot.register_next_step_handler(answer, custom_command)
 
-def clean_string(text: str) -> str:
+def clean_string(text: str) -> str:                                                         #Удаляем лишние символы из вывода команд
     return (
         text.replace("-", "")
         .replace("[33m", "")
@@ -165,7 +165,7 @@ def clean_string(text: str) -> str:
     )
 
 
-def clean_string_interfaces(text: str) -> str:
+def clean_string_interfaces(text: str) -> str:                                              #Удаляем лишние символы из вывода команды запроса списка интерфейсов
     return (
         text.replace("-", "")
         .replace("[36m", "")
@@ -179,9 +179,9 @@ def clean_string_interfaces(text: str) -> str:
 
 def scan_interfaces(param = 'Q'):
     if (param == 'no_shadowsocks'):
-        command = [f'echo "Q" | kvas vpn set | grep -v "shadowsocks" | grep "Интерфейс" | sed "s/[^И]*//"']  
+        command = [f'echo "Q" | kvas vpn set | grep -v "shadowsocks" | grep "Интерфейс"']  #Удаляем интерфейс shadowsocks, так как при его настройке требуются дополнительные действия
     else:
-        command = [f'echo "{param}" | kvas vpn set | grep "Интерфейс" | sed "s/[^И]*//"']
+        command = [f'echo "{param}" | kvas vpn set | grep "Интерфейс"']                     #param='Q' - сканирование без выбора, param='2' - выбор интерфейса под номером 2
     with tempfile.TemporaryFile() as tempf:
         process = subprocess.Popen(command, shell = True, stdout=tempf)
         process.wait()
@@ -192,25 +192,25 @@ def scan_interfaces(param = 'Q'):
     return output_clean
 
 
-def make_keyboard_interfaces(list_interfaces):
+def make_keyboard_interfaces(list_interfaces):                                              #Создаем клавиатуру для выбора интерфейса
     list_interfaces_split = list_interfaces.split()
-    word_seek = "Интерфейс"
-    interface_next = []
+    word_seek = "Интерфейс" #Слово для поиска
+    interface_next = []                                                                     #Здесь хранятся названия интерейфейсов. Название идет сразу после слова "Интерфейс"
     for word in list_interfaces_split:
         if word == word_seek:
-            ind = list_interfaces_split.index(word_seek)
+            ind = list_interfaces_split.index(word_seek)                                    #Запоминаем индекс найденного интерфейса 
             list_interfaces_split.pop(list_interfaces_split.index(word_seek))
             interface_next.append(list_interfaces_split[ind])
 
     keyboard_interfaces = types.InlineKeyboardMarkup()
     for i in range(0, len(interface_next)):
-        keyboard_interfaces.add(types.InlineKeyboardButton(text=interface_next[i], callback_data=str(i)))
+        keyboard_interfaces.add(types.InlineKeyboardButton(text=interface_next[i], callback_data=str(i))) #Добавляем инлайн кнопку с найденными интерфейсами
 
     return keyboard_interfaces
 
 
 
-def vless(url):
+def vless(url):                                                                             #Создаем конфиг xray из ссылки формата vless://
     replace_symbol = "[\[|'|\]]"
     dict_str = parse_qs(urlparse(url).query)
     dict_netloc = {}
@@ -218,8 +218,13 @@ def vless(url):
     dict_netloc['server'] = re.split("@|:|\n",(urlparse(url).netloc))[1]
     dict_netloc['port'] = re.split("@|:|\n",(urlparse(url).netloc))[2]
     dict_result = {**dict_str, **dict_netloc}
-    get_routerip = '/opt/sbin/ip a | grep ": br0:" -A4 | grep "inet " | tr -s " " | cut -d" " -f3 | cut -d"/" -f1'
-    routerip = str(subprocess.check_output(get_routerip, shell = True)).replace('b', '').replace("'", "").replace('\n', '')
+    get_routerip = '/opt/sbin/ip a | grep ": br0:" -A4 | grep "inet " | tr -s " " | cut -d" " -f3 | cut -d"/" -f1' #Получаем адрес роутера
+    routerip = str(subprocess.check_output(get_routerip, shell = True)).replace('b', '').replace("'", "").replace('\n', '') #Убираем лишние символы из вывода get_routerip
+
+    if 'flow' not in dict_result:                                                           #Некоторые ссылки не содержат flow и sid
+        dict_result['flow'] = ''
+    if 'sid' not in dict_result:
+        dict_result['sid'] = ''
 
     json_data = '{"log": {"loglevel": "info"},"routing": {"rules": [],"domainStrategy": "AsIs"},' \
         '"inbounds": [{"listen":"' + str(routerip) + '","port": "1081","protocol": "socks"}],' \
@@ -273,8 +278,8 @@ def vpn_set_prompt(message: types.Message):
         message.chat.id,
         "Производится сканирование интерфейсов:",
     )
-    list_interfaces = scan_interfaces('no_shadowsocks')
-    keyboard = make_keyboard_interfaces(list_interfaces)
+    list_interfaces = scan_interfaces('no_shadowsocks')                                     #Без shadowsocks, потому что для него отдельный обработчик
+    keyboard = make_keyboard_interfaces(list_interfaces)                                    #Инлайн клавиатура с названиями интерфейсов
 
     answer = bot.send_message(
         message.chat.id,
@@ -301,13 +306,14 @@ def handle_vpn_set(call):
 
     bot.send_message(
         call.message.chat.id,
-        mcode(scan_interfaces(interface_num)),
+        mcode(scan_interfaces(interface_num)),                                              #Передаем в функцию номер интерфейса
         parse_mode="MarkdownV2",
     )
 
 
-def handle_install_xray(message: types.Message):
-
+def handle_install_xray(message: types.Message):                                            #Установка X-Ray
+    os.system('mkdir /opt/etc/xray')
+    os.system('touch /opt/etc/xray/config.json')
     vless(message.text)
 
     bot.send_message(
@@ -319,13 +325,13 @@ def handle_install_xray(message: types.Message):
         [
             "sed",
             "-i",
-            "'s/\"PPTP\"/\"PPTP\",\"Proxy\"/",
+            "'s/\"L2TP\"/\"L2TP\",\"Proxy\"/",
             "/opt/apps/kvas/bin/libs/vpn",
         ]
-    ).wait()
+    ).wait()                                                                                #Добавляем в КВАС возможность выбора прокси
 
     with tempfile.TemporaryFile() as tempf:
-        process = subprocess.Popen(['curl -o /opt/script-xray.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/dev/script/script-xray.sh && sh /opt/script-xray.sh -install && rm /opt/script-xray.sh'], shell = True, stdout=tempf)
+        process = subprocess.Popen(['curl -o /opt/script-xray.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/script/script-xray.sh && sh /opt/script-xray.sh -install && rm /opt/script-xray.sh'], shell = True, stdout=tempf)
         process.wait()
         tempf.seek(0)
         output = tempf.read().decode("utf-8")
@@ -339,10 +345,10 @@ def handle_install_xray(message: types.Message):
 
 
 @bot.message_handler(regexp="Удалить XRay", chat_types=["private"])
-def uninstall_xray(message: types.Message):
+def uninstall_xray(message: types.Message):                                                 #Удаление X-Ray
 
     with tempfile.TemporaryFile() as tempf:
-        process = subprocess.Popen(['curl -o /opt/script-xray.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/dev/script/script-xray.sh && sh /opt/script-xray.sh -uninstall && rm /opt/script-xray.sh'], shell= True, stdout=tempf)
+        process = subprocess.Popen(['curl -o /opt/script-xray.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/script/script-xray.sh && sh /opt/script-xray.sh -uninstall && rm /opt/script-xray.sh'], shell= True, stdout=tempf)
         process.wait()
         tempf.seek(0)
         output = tempf.read().decode("utf-8")
@@ -354,7 +360,7 @@ def uninstall_xray(message: types.Message):
         )
 
 
-def handle_add_host(message: types.Message):
+def handle_add_host(message: types.Message):                                                #Добавляем домен
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons = [
         types.KeyboardButton("Добавить хост"),
@@ -366,7 +372,7 @@ def handle_add_host(message: types.Message):
         types.KeyboardButton("Назад"),
     ]
     keyboard.add(*buttons)
-    domain_list = message.text.split()
+    domain_list = message.text.split()                                                      #Если несколько доменов перечислено через пробел
     for domain in domain_list:
         with tempfile.TemporaryFile() as tempf:
             process = subprocess.Popen(["kvas", "add", domain, "yes"], stdout=tempf)
@@ -383,7 +389,7 @@ def handle_add_host(message: types.Message):
             )
 
 
-def handle_delete_host(message: types.Message):
+def handle_delete_host(message: types.Message):                                             #Удаляем домен
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons = [
         types.KeyboardButton("Добавить хост"),
@@ -412,7 +418,7 @@ def handle_delete_host(message: types.Message):
 
 
 @bot.message_handler(regexp="Список хостов", chat_types=["private"])
-def list_hosts(message: types.Message):
+def list_hosts(message: types.Message):                                                     #Вывод списка доменов
     src = "/opt/etc/hosts.list"
     with open(src) as file:
         sites = file.readlines()
@@ -423,12 +429,12 @@ def list_hosts(message: types.Message):
         sites.sort()
         response = mcode("\r".join(sites))
 
-        if len(response) > 4090:
+        if len(response) > 4090:                                                            #Режем большое сообщение
             for x in range(0, len(response), 4090):
                 bot.send_message(
                     message.chat.id, mcode(response[x : x + 4090] + "\n"), parse_mode="MarkdownV2"
                 )
-                time.sleep(1)
+                time.sleep(1)                                                               #Иногда бывает ошибка при частой отправке
         else:
             bot.send_message(message.chat.id, response, parse_mode="MarkdownV2")
 
@@ -442,7 +448,7 @@ def clear_hosts(message: types.Message):
 
 
 @bot.message_handler(commands=["removeall"], chat_types=["private"])
-def remove_all_hosts(message: types.Message):
+def remove_all_hosts(message: types.Message):                                               #Удаляем все домены
     with tempfile.TemporaryFile() as tempf:
         subprocess.Popen(['echo "Y" | kvas purge'], shell=True, stdout=tempf).wait()
         tempf.seek(0)
@@ -456,11 +462,11 @@ def remove_all_hosts(message: types.Message):
         )
 
     backup_file = InputFile("/opt/etc/.kvas/backup/hosts.list")
-    bot.send_document(message.chat.id, backup_file)
+    bot.send_document(message.chat.id, backup_file)                                         #Отправляем бекап после удаления. Бекап делает КВАС
 
 
 @bot.message_handler(regexp="Импорт", chat_types=["private"])
-def import_prompt(message: types.Message):
+def import_prompt(message: types.Message): 
     answer = bot.send_message(
         message.chat.id,
         f"Пришлите файл для импорта в формате, который {mlink('поддерживает', 'https://github.com/qzeleza/kvas/wiki')} {mbold('КВАС')}",
@@ -469,7 +475,7 @@ def import_prompt(message: types.Message):
     bot.register_next_step_handler(answer, handle_import)
 
 
-def handle_import(message: types.Message):
+def handle_import(message: types.Message):                                                  #Импортируем домены из файла
     file_info = bot.get_file(message.document.file_id)
     downloaded_file = bot.download_file(file_info.file_path)
     src = "/opt/kvastelegram.import"
@@ -497,14 +503,13 @@ def handle_import(message: types.Message):
 
     os.system(
         "awk 'NF > 0' /opt/etc/hosts.list > /opt/etc/hostsb.list && cp /opt/etc/hostsb.list /opt/etc/hosts.list && rm /opt/etc/hostsb.list"
-    )
+    )                                                                                       #Уже не помню, зачем проверка на пустоту, но без этого не работает :)
 
 
 @bot.message_handler(regexp="Экспорт", chat_types=["private"])
-def export_hosts(message: types.Message):
+def export_hosts(message: types.Message):                                                   #Экспортируем список доменов
     src = "/opt/etc/.kvas/backup/kvas_export.txt"
     subprocess.Popen(["kvas", "export", src]).wait()
-    #export_file = InputFile(src)
     bot.send_document(message.chat.id, open(src, 'rb'))
 
 
@@ -514,8 +519,8 @@ def reboot_router(message: types.Message):
     subprocess.Popen(["reboot"])
 
 @bot.message_handler(func=lambda message: message.chat.id in user_states and user_states[message.chat.id], chat_types=["private"])
-def custom_command(message: types.Message):
-    interrupt_command = ["Отмена", "отмена", "Назад"]
+def custom_command(message: types.Message):                                                 #Режим терминала
+    interrupt_command = ["Отмена", "отмена", "Назад"]                                       #Стоп-слова для выхода из режима терминала
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = [
         types.KeyboardButton("Запустить test"),
@@ -527,8 +532,8 @@ def custom_command(message: types.Message):
         types.KeyboardButton("Назад"),
     ]
     keyboard.add(*buttons)
-    if message.text in interrupt_command:
-        user_states.pop(message.chat.id)
+    if message.text in interrupt_command:                                                   #Если в сообщении есть стоп-слово
+        user_states.pop(message.chat.id)                                                    #то выходим из режима терминала
         bot.send_message(message.chat.id, "Вы вышли из режима терминала.", reply_markup=keyboard)
     else:
         with tempfile.TemporaryFile() as tempf:
@@ -552,7 +557,7 @@ def custom_command(message: types.Message):
                     )
 
 @bot.message_handler(regexp="Запустить test", chat_types=["private"])
-def run_test(message: types.Message):
+def run_test(message: types.Message):                                                       #Выполняем команду kvas test
     bot.send_message(message.chat.id, "Тест запущен, ожидайте несколько минут")
     subprocess.Popen(
         [
@@ -561,8 +566,8 @@ def run_test(message: types.Message):
             "/\tipset_site_visit_check/s/^/#\ /",
             "/opt/apps/kvas/bin/libs/check",
         ]
-    ).wait()
-
+    ).wait()                                                                                #Комментируем функцию ipset_site_visit_check(), 
+                                                                                            #чтобы kvas test завершался без участия пользователя
     with tempfile.TemporaryFile() as tempf:
         test_proc = subprocess.Popen(["kvas", "test"], stdout=tempf)
         test_proc.wait()
@@ -585,7 +590,7 @@ def run_test(message: types.Message):
 
 
 @bot.message_handler(regexp="Запустить debug", chat_types=["private"])
-def run_debug(message: types.Message):
+def run_debug(message: types.Message):                                                      #Выполняем команду kvas debug и отправляем пользователю файл
     bot.send_message(
         message.chat.id,
         f"Запущена команда {mcode('kvas debug')}",
@@ -597,7 +602,7 @@ def run_debug(message: types.Message):
 
 
 @bot.message_handler(regexp="Запустить reset", chat_types=["private"])
-def run_reset(message: types.Message):
+def run_reset(message: types.Message):                                                      #Выполняем команду kvas reset и отправляем вывод
     bot.send_message(
         message.chat.id,
         f"Запущена команда {mcode('kvas reset')}",
@@ -619,7 +624,7 @@ def run_reset(message: types.Message):
 def update_bot(message: types.Message):
     bot.send_message(message.chat.id, "Запущено обновление бота")
     os.system(
-        "curl -o /opt/upgrade.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/script/upgrade.sh && sh /opt/upgrade.sh && rm /opt/upgrade.sh"
+        "curl -o /opt/upgrade.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/upgrade.sh && sh /opt/upgrade.sh && rm /opt/upgrade.sh"
     )
 
 

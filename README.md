@@ -24,6 +24,11 @@ curl -OLf https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/script/in
 ```
 /opt/etc/init.d/S98telegram4kvas start
 ```
+# Удаление
+Для удаления бота выполните команду
+```
+curl -OLf https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/script/install.sh && sh install.sh -remove
+```
 # На чай автору бота
 
 **МИР** 2202201523445100
