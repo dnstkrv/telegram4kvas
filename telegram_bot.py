@@ -247,23 +247,34 @@ def handle_list_interfaces(message: types.Message):
 
 @bot.message_handler(regexp="Смена интерфейса", chat_types=["private"])
 def vpn_set_prompt(message: types.Message):
-    list_interfaces = scan_interfaces()
     answer = bot.send_message(
         message.chat.id,
         "Производится сканирование интерфейсов:",
     )
+
     list_interfaces = scan_interfaces()
+
     bot.send_message(
         message.chat.id,
-        mcode(list_interfaces.split()),
+        mcode(list_interfaces),
         parse_mode="MarkdownV2",
     )
+    
+    list_interfaces_split = list_interfaces.split()
+    word_seek = "Интерфейс"
+    interface_next = []
+    for word in list_interfaces_split:    
+        if word == word_seek:
+            ind = list_interfaces_split.index(word_seek)
+            list_interfaces_split.pop(list_interfaces_split.index(word_seek))
+            interface_next.append(list_interfaces_split[ind])
+            
+    for i in range(0, len(interface_next)):
+        keyboard.add(InlineKeyboardButton(interface_next[i].text, callback_data="interface"))
 
-    bot.register_next_step_handler(answer, handle_vpn_set)
+    bot.send_message(message.chat.id,'Выберите интерфейс',reply_markup = keyboard)
 
-
-#def handle_vpn_set(message: types.Message):
-
+    #bot.register_next_step_handler(answer, handle_vpn_set)
 
 
 def handle_install_xray(message: types.Message):
