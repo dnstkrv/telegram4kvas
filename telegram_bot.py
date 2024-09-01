@@ -1,18 +1,32 @@
+import logging
 import os
+import re
 import subprocess
 import tempfile
 import time
-
-import re
-from urllib.parse import urlparse, parse_qs
+from logging.handlers import RotatingFileHandler
+from urllib.parse import parse_qs, urlparse
 
 import telebot
 from telebot import types
 from telebot.formatting import mbold, mcode, mlink
 from telebot.handler_backends import BaseMiddleware, CancelUpdate
-from telebot.types import InputFile, InlineKeyboardMarkup, InlineKeyboardButton
+from telebot.types import InputFile
 
 import telegram_bot_config
+
+logger = logging.getLogger('telegram4kvas')
+logger.setLevel(logging.DEBUG)
+
+handler = RotatingFileHandler(
+    filename='telegram4kvas_log.txt',
+    maxBytes=1 * 1024 * 1024, 
+    backupCount=3,
+    encoding="UTF-8"
+)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 user_states = {}
 
@@ -516,6 +530,7 @@ def export_hosts(message: types.Message):                                       
 @bot.message_handler(regexp="Перезагрузить роутер", chat_types=["private"])
 def reboot_router(message: types.Message):
     bot.send_message(message.chat.id, "Роутер перезагружается")
+    logger.warning("Rebooting the router...")
     subprocess.Popen(["reboot"])
 
 @bot.message_handler(func=lambda message: message.chat.id in user_states and user_states[message.chat.id], chat_types=["private"])
@@ -623,6 +638,7 @@ def run_reset(message: types.Message):                                          
 @bot.message_handler(regexp="Обновить бота", chat_types=["private"])
 def update_bot(message: types.Message):
     bot.send_message(message.chat.id, "Запущено обновление бота")
+    logger.warning("The bot has started updating")
     os.system(
         "curl -o /opt/upgrade.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/upgrade.sh && sh /opt/upgrade.sh && rm /opt/upgrade.sh"
     )
@@ -637,6 +653,7 @@ try:
     bot.setup_middleware(Middleware())
     bot_me = bot.get_me()
     os.system(f"logger -s -t telegram4kvas Bot @{bot_me.username} running...")
+    logger.info("Bot @%s running", bot_me.username)
     bot.infinity_polling(skip_pending=True, timeout=60)
 except Exception as err:
     with open("/opt/error.log", "a") as error_log:
