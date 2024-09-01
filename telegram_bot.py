@@ -15,8 +15,8 @@ from telebot.types import InputFile
 
 import telegram_bot_config
 
-logger = logging.getLogger('telegram4kvas')
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(name='telegram4kvas')
+logger.setLevel(level=logging.DEBUG)
 
 handler = RotatingFileHandler(
     filename='telegram4kvas_log.txt',
@@ -649,12 +649,10 @@ def go_back(message: types.Message):
     handle_start(message)
 
 
-try:
+
+if __name__ == "__main__":
     bot.setup_middleware(Middleware())
     bot_me = bot.get_me()
     os.system(f"logger -s -t telegram4kvas Bot @{bot_me.username} running...")
     logger.info("Bot @%s running", bot_me.username)
     bot.infinity_polling(skip_pending=True, timeout=60)
-except Exception as err:
-    with open("/opt/error.log", "a") as error_log:
-        error_log.write(f"Error: {err}\n")
