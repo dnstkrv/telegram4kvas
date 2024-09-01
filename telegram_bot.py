@@ -20,7 +20,7 @@ logger = logging.getLogger(name="telegram4kvas")
 logger.setLevel(logging.DEBUG)
 
 handler = RotatingFileHandler(
-    filename="telegram4kvas_log.txt",
+    filename="/opt/etc/telegram4kvas/telegram4kvas_log.txt",
     maxBytes=1 * 1024 * 1024,
     backupCount=3,
     encoding="UTF-8",
