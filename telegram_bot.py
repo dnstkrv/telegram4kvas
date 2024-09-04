@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import requests
 import subprocess
 import tempfile
 import time
@@ -51,6 +52,14 @@ class Middleware(BaseMiddleware):
                 "Unauthorized access attempt by %s", message.from_user.username
             )
             bot.send_message(message.chat.id, "Вы не авторизованы")
+
+            if message.from_user.username == None:
+                username = "Неизвестно"
+            else:
+                username = f"@{message.from_user.username}"
+
+            for id in telegram_bot_config.userid:
+                bot.send_message(id, f"Попытка неавторизованного доступа, username: {username}, UserID: {message.chat.id}")
             return CancelUpdate()
 
     def post_process(self, message, data, exception):
@@ -233,6 +242,21 @@ def clean_string_interfaces(text: str) -> str:
         .replace("[1;31m", "")
     )
 
+def send_long_message(output, message: types.Message):
+    if len(output) > 4090:
+        for x in range(0, len(output), 4090):
+            bot.send_message(
+                message.chat.id,
+                mcode(output[x : x + 4090] + "\n"),
+                parse_mode="MarkdownV2",
+            )
+            time.sleep(1)
+    else:
+        bot.send_message(
+            message.chat.id,
+            mcode(output),
+            parse_mode="MarkdownV2",
+        )
 
 def scan_interfaces(param="Q"):
     try:
@@ -574,17 +598,7 @@ def list_hosts(message: types.Message):
         else:
             sites.sort()
             response = mcode("\r".join(sites))
-
-            if len(response) > 4090:
-                for x in range(0, len(response), 4090):
-                    bot.send_message(
-                        message.chat.id,
-                        mcode(response[x : x + 4090] + "\n"),
-                        parse_mode="MarkdownV2",
-                    )
-                    time.sleep(1)
-            else:
-                bot.send_message(message.chat.id, response, parse_mode="MarkdownV2")
+            send_long_message(response, message)
     except Exception as e:
         logger.exception("Error in list_hosts: %s", str(e))
         bot.send_message(
@@ -658,20 +672,7 @@ def handle_import(message: types.Message):
             subprocess.Popen(["kvas", "import", src], stdout=tempf).wait()
             tempf.seek(0)
             output = clean_string(tempf.read().decode("utf-8"))
-            if len(output) > 4090:
-                for x in range(0, len(output), 4090):
-                    bot.send_message(
-                        message.chat.id,
-                        mcode(output[x : x + 4090] + "\n"),
-                        parse_mode="MarkdownV2",
-                    )
-                    time.sleep(1)
-            else:
-                bot.send_message(
-                    message.chat.id,
-                    mcode("\n" + output + "\n"),
-                    parse_mode="MarkdownV2",
-                )
+            send_long_message(output, message)
 
         os.system(
             "awk 'NF > 0' /opt/etc/hosts.list > /opt/etc/hostsb.list && cp /opt/etc/hostsb.list /opt/etc/hosts.list && rm /opt/etc/hostsb.list"
@@ -742,20 +743,7 @@ def custom_command(message: types.Message):
                 output_proc.wait()
                 tempf.seek(0)
                 output = tempf.read().decode("utf-8")
-                if len(output) > 4090:
-                    for x in range(0, len(output), 4090):
-                        bot.send_message(
-                            message.chat.id,
-                            mcode(output[x : x + 4090] + "\n"),
-                            parse_mode="MarkdownV2",
-                        )
-                        time.sleep(1)
-                else:
-                    bot.send_message(
-                        message.chat.id,
-                        mcode("\n" + output + "\n"),
-                        parse_mode="MarkdownV2",
-                    )
+                send_long_message(output, message)
     except Exception as e:
         logger.exception("Error in custom_command: %s", str(e))
         bot.send_message(message.chat.id, "Произошла ошибка при выполнении команды.")
@@ -779,20 +767,7 @@ def run_test(message: types.Message):
             test_proc.wait()
             tempf.seek(0)
             output = clean_string(tempf.read().decode("utf-8"))
-            if len(output) > 4090:
-                for x in range(0, len(output), 4090):
-                    bot.send_message(
-                        message.chat.id,
-                        mcode(output[x : x + 4090] + "\n"),
-                        parse_mode="MarkdownV2",
-                    )
-                    time.sleep(1)
-            else:
-                bot.send_message(
-                    message.chat.id,
-                    mcode(output),
-                    parse_mode="MarkdownV2",
-                )
+            send_long_message(output, message)
     except Exception as e:
         logger.exception("Error in run_test: %s", str(e))
         bot.send_message(message.chat.id, "Произошла ошибка при запуске теста.")
@@ -845,11 +820,28 @@ def update_bot(message: types.Message):
         logger.warning(
             "User %s requested to update the bot", message.from_user.username
         )
-        bot.send_message(message.chat.id, "Запущено обновление бота")
-        logger.warning("The bot has started updating")
-        os.system(
+        
+        response = requests.get("https://api.github.com/repos/dnstkrv/telegram4kvas/releases/latest")
+        if response.status_code != 200:
+            raise Exception(f"Failed to retrieve latest version: {response.text}")
+        version_now = telegram_bot_config.version
+        version_new = response.json()["tag_name"]
+        changelog = response.json()["body"]
+
+        if version_now != version_new:
+            bot.send_message(message.chat.id, f"Текущая версия бота: {version_now}, устанавливается версия: {version_new}")
+            if changelog:
+                send_long_message(changelog, message)
+            os.system(
             "curl -o /opt/upgrade.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/upgrade.sh && sh /opt/upgrade.sh && rm /opt/upgrade.sh"
-        )
+            )
+            bot.send_message(message.chat.id, "Запущено обновление бота")
+        else:
+            bot.send_message(message.chat.id, f"Текущая версия актуальна ({version_now})")
+       
+        logger.warning("The bot has started updating")
+        
+
     except Exception as e:
         logger.exception("Error in update_bot: %s", str(e))
         bot.send_message(message.chat.id, "Произошла ошибка при обновлении бота.")
