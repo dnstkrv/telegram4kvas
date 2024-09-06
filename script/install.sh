@@ -1,10 +1,14 @@
 #!/bin/sh
 
+config_path="/opt/etc/telegram4kvas/telegram_bot_config.py"
+release_url=https://api.github.com/repos/dnstkrv/telegram4kvas/releases
+latest_version=$(curl -sH "Accept: application/vnd.github.v3+json" ${release_url}/latest | grep tag_name | awk -F\" '{print $4}')
+
 if [ "$1" = "-remove" ]; then
     /opt/etc/init.d/S98telegram4kvas stop
 	echo "Y" | pip uninstall pip 
     opkg remove --force-removal-of-dependent-packages python3 python3-pip
-    rm -rf /opt/etc/telegram4kvas
+    rm -rf /opt/etc/telegram4kvas/
     echo "Бот, конфиг и зависимости удалены"
 fi
 
@@ -46,25 +50,18 @@ if [ "$1" = "-install" ]; then
     echo -e "\nВведите API ключ, полученный от BotFather:"
     read api
     sed -i "s/\(token = \).*/\1\'${api}\'/" "${config_file}"
-    
-    echo -e "\nВведите Ваш логин телеграм, например dnstkrv:"
-    read username
-    sed -i "s/\(usernames = \[\).*/\1\'${username}\'\]/" "${config_file}"
-    
-    echo -e "\nВведите Ваш логин userID (Необязательно, достаточно логина):"
+        
+    echo -e "\nВведите Ваш userID:"
     read userID
     sed -i "s/\(userid = \[\).*/\1${userID}\]/" "${config_file}"
     
     echo -e "\nИзменения сохранены в файл /opt/etc/telegram4kvas/telegram_bot_config.py"
 
+    sed -i '/version/d' $config_path 
+    echo "version = '$latest_version'" >> $config_path
+
     /opt/etc/init.d/S98telegram4kvas start
     
-    if [ "$1" = "-uninstall" ]; then
-    	pip uninstall pip
-        opkg remove --force-removal-of-dependent-packages python3 python3-pip
-        rm -rf /opt/etc/telegram4kvas
-        echo "Бот, конфиг и зависимости удалены"
-    fi
 fi
 
 if [ "$1" = "-help" ]; then

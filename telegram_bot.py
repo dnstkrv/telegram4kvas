@@ -45,8 +45,7 @@ class Middleware(BaseMiddleware):
     def pre_process(self, message: types.Message, data: dict):
         logger.debug("Processing message from %s", message.from_user.username)
         if (
-            message.from_user.username not in telegram_bot_config.usernames
-            and message.from_user.id not in telegram_bot_config.userid
+            message.from_user.id not in telegram_bot_config.userid
         ):
             logger.warning(
                 "Unauthorized access attempt by %s", message.from_user.username
