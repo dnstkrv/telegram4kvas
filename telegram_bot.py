@@ -860,7 +860,7 @@ if __name__ == "__main__":
     try:
         bot.setup_middleware(Middleware())
         bot_me = bot.get_me()
-        os.system(f"logger -s -t telegram4kvas Bot @{bot_me.username} running...")
+        os.system(f"logger -s -t telegram4kvas Bot @{bot_me.username} version: {telegram_bot_config.version} running...")
         logger.info("Bot @%s running", bot_me.username)
         bot.infinity_polling(skip_pending=True, timeout=60)
     except Exception as e:
