@@ -1,13 +1,15 @@
+import configparser
 import logging
 import os
 import re
-import requests
 import subprocess
 import tempfile
 import time
+from contextlib import suppress
 from logging.handlers import RotatingFileHandler
 from urllib.parse import parse_qs, urlparse
 
+import requests
 import telebot
 from telebot import types
 from telebot.formatting import mbold, mcode, mlink
@@ -15,6 +17,9 @@ from telebot.handler_backends import BaseMiddleware, CancelUpdate
 from telebot.types import InputFile
 
 import telegram_bot_config
+
+config = configparser.ConfigParser()
+CONFIG_PATH = "/opt/etc/telegram4kvas/config.ini"
 
 # Настройка логирования
 logger = logging.getLogger(name="telegram4kvas")
@@ -42,23 +47,44 @@ class Middleware(BaseMiddleware):
     def __init__(self):
         self.update_types = ["message"]
 
+    def _get_admins(self):
+        admins = []
+        with suppress(Exception):
+            config.read(CONFIG_PATH, encoding="UTF-8")
+            admins.extend([int(a) for a in config.get("ADMINS", "users_ids").split(",")])
+        admins.extend(telegram_bot_config.userid)
+        return admins
+
     def pre_process(self, message: types.Message, data: dict):
         logger.debug("Processing message from %s", message.from_user.username)
-        if (
-            message.from_user.id not in telegram_bot_config.userid
-        ):
+        admins = self._get_admins()
+        if not admins:
+            config["ADMINS"] = {
+                "users_ids": message.from_user.id,
+            }
+            with open(CONFIG_PATH, "w", encoding="UTF-8") as config_file:
+                config.write(config_file)
+            admins.append(message.from_user.id)
+
+        if message.from_user.id not in admins:
             logger.warning(
-                "Unauthorized access attempt by %s", message.from_user.username
+                "Unauthorized access attempt by %s",
+                message.from_user.username,
             )
             bot.send_message(message.chat.id, "Вы не авторизованы")
 
-            if message.from_user.username == None:
-                username = "Неизвестно"
-            else:
+            username = "Неизвестно"
+            if message.from_user.username is not None:
                 username = f"@{message.from_user.username}"
+            
+            user_link = f"[{message.from_user.full_name}](tg://user?id={message.from_user.id})"
 
-            for id in telegram_bot_config.userid:
-                bot.send_message(id, f"Попытка неавторизованного доступа, username: {username}, UserID: {message.chat.id}")
+            for id in admins:
+                bot.send_message(
+                    id,
+                    f"Попытка неавторизованного доступа:\n{user_link} ({username}), UserID: {message.from_user.id}",
+                    parse_mode="MarkdownV2",
+                )
             return CancelUpdate()
 
     def post_process(self, message, data, exception):
@@ -127,6 +153,7 @@ def service_message(message: types.Message):
             types.KeyboardButton("Перезагрузить роутер"),
             types.KeyboardButton("Терминал"),
             types.KeyboardButton("Обновить бота"),
+            types.KeyboardButton("Добавить пользователя"),
             types.KeyboardButton("Назад"),
         ]
         keyboard.add(*buttons)
@@ -138,6 +165,40 @@ def service_message(message: types.Message):
     except Exception as e:
         logger.exception("Error in service_message: %s", str(e))
         bot.send_message(message.chat.id, "Произошла ошибка, попробуйте позже.")
+
+
+@bot.message_handler(regexp="Добавить пользователя", chat_types=["private"])
+def add_admin_handler(message: types.Message):
+    logger.info("User %s requested add new admin menu", message.from_user.username)
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    buttons = [
+        types.KeyboardButton("Назад"),
+    ]
+    keyboard.add(*buttons)
+    answer = bot.send_message(
+        message.chat.id,
+        f"Введи корректный id пользователя, которого нужно добавить как администратора\nНапример:\n{message.from_user.id}",
+        reply_markup=keyboard,
+    )
+    bot.register_next_step_handler(answer, handle_add_host)
+
+
+def handle_add_new_admin(message: types.Message):
+    if message.text == "Назад":
+        service_message(message=message)
+        return
+    try:
+        admins = [int(message.text)]
+        if os.path.isfile(CONFIG_PATH):
+            config.read(CONFIG_PATH, encoding="UTF-8")
+            admins.extend([int(a) for a in config.get("ADMINS", "users_ids").split(",")])
+        config['ADMINS'] = {
+            'users_ids': admins,
+        }
+        with open(CONFIG_PATH, 'w', encoding="UTF-8") as config_file:
+            config.write(config_file)
+    except Exception:
+        add_admin_handler(message=message)
 
 
 @bot.message_handler(regexp="Управление подключениями", chat_types=["private"])
@@ -246,6 +307,7 @@ def clean_string_interfaces(text: str) -> str:
         .replace("[1;31m", "")
     )
 
+
 def send_long_message(output, message: types.Message):
     if len(output) > 4090:
         for x in range(0, len(output), 4090):
@@ -261,6 +323,7 @@ def send_long_message(output, message: types.Message):
             mcode(output),
             parse_mode="MarkdownV2",
         )
+
 
 def scan_interfaces(param="Q"):
     try:
@@ -838,8 +901,10 @@ def update_bot(message: types.Message):
         logger.warning(
             "User %s requested to update the bot", message.from_user.username
         )
-        
-        response = requests.get("https://api.github.com/repos/dnstkrv/telegram4kvas/releases/latest")
+
+        response = requests.get(
+            "https://api.github.com/repos/dnstkrv/telegram4kvas/releases/latest"
+        )
         if response.status_code != 200:
             raise Exception(f"Failed to retrieve latest version: {response.text}")
         version_now = telegram_bot_config.version
@@ -847,18 +912,23 @@ def update_bot(message: types.Message):
         changelog = response.json()["body"]
 
         if version_now != version_new:
-            bot.send_message(message.chat.id, f"Текущая версия бота: {version_now}, устанавливается версия: {version_new}")
+            bot.send_message(
+                message.chat.id,
+                f"Текущая версия бота: {version_now}, устанавливается версия: {version_new}",
+            )
             if changelog:
                 send_long_message(changelog, message)
             os.system(
-            "curl -o /opt/upgrade.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/upgrade.sh && sh /opt/upgrade.sh && rm /opt/upgrade.sh"
+                "curl -o /opt/upgrade.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/upgrade.sh && sh /opt/upgrade.sh && rm /opt/upgrade.sh"
             )
             bot.send_message(message.chat.id, "Запущено обновление бота")
         else:
-            bot.send_message(message.chat.id, f"Текущая версия актуальна ({version_now})")
-       
+            bot.send_message(
+                message.chat.id,
+                f"Текущая версия актуальна ({version_now})",
+            )
+
         logger.warning("The bot has started updating")
-        
 
     except Exception as e:
         logger.exception("Error in update_bot: %s", str(e))
@@ -879,7 +949,9 @@ if __name__ == "__main__":
     try:
         bot.setup_middleware(Middleware())
         bot_me = bot.get_me()
-        os.system(f"logger -s -t telegram4kvas Bot @{bot_me.username} version: {telegram_bot_config.version} running...")
+        os.system(
+            f"logger -s -t telegram4kvas Bot @{bot_me.username} version: {telegram_bot_config.version} running..."
+        )
         logger.info("Bot @%s running", bot_me.username)
         send_startup_message()
         bot.infinity_polling(skip_pending=True, timeout=60)
