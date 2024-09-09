@@ -52,10 +52,6 @@ if [ "$1" = "-install" ]; then
     echo -e "\nВведите API ключ, полученный от BotFather:"
     read api
     sed -i "s/\(token = \).*/\1\'${api}\'/" "${config_file}"
-        
-    echo -e "\nВведите Ваш userID:"
-    read userID
-    sed -i "s/\(userid = \[\).*/\1${userID}\]/" "${config_file}"
     
     echo -e "\nИзменения сохранены в файл /opt/etc/telegram4kvas/telegram_bot_config.py"
 
