@@ -148,7 +148,7 @@ def service_message(message: types.Message):
             types.KeyboardButton("Перезагрузить роутер"),
             types.KeyboardButton("Терминал"),
             types.KeyboardButton("Обновить бота"),
-            types.KeyboardButton("Добавить Админа"),
+            types.KeyboardButton("Добавить пользователя"),
             types.KeyboardButton("Назад"),
         ]
         keyboard.add(*buttons)
@@ -162,7 +162,7 @@ def service_message(message: types.Message):
         bot.send_message(message.chat.id, "Произошла ошибка, попробуйте позже.")
 
 
-@bot.message_handler(regexp="Добавить Админа", chat_types=["private"])
+@bot.message_handler(regexp="Добавить пользователя", chat_types=["private"])
 def add_admin_handler(message: types.Message):
     logger.info("User %s requested add new admin menu", message.from_user.username)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
