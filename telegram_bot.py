@@ -542,8 +542,15 @@ def handle_add_host(message: types.Message):
 
                 bot.send_message(
                     message.chat.id,
-                    mcode("\n" + output_clean + "\n"),
+                    mcode(output_clean + "\n"),
                     parse_mode="MarkdownV2",
+                    reply_markup=keyboard,
+                )
+
+                if len(domain_list) > 1 and domain == domain_list[-1]:
+                    bot.send_message(
+                    message.chat.id,
+                    "Добавление окончено",
                     reply_markup=keyboard,
                 )
     except Exception as e:
@@ -573,10 +580,17 @@ def handle_delete_host(message: types.Message):
                 tempf.seek(0)
                 output = tempf.read().decode("utf-8")
                 output_clean = clean_string(output)
+
                 bot.send_message(
                     message.chat.id,
-                    mcode("\n" + output_clean + "\n"),
+                    mcode(output_clean + "\n"),
                     parse_mode="MarkdownV2",
+                    reply_markup=keyboard,
+                )
+                if len(domain_list) > 1 and domain == domain_list[-1]:
+                    bot.send_message(
+                    message.chat.id,
+                    "Удаление окончено",
                     reply_markup=keyboard,
                 )
     except Exception as e:
