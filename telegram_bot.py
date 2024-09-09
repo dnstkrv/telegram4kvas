@@ -181,7 +181,7 @@ def add_admin_handler(message: types.Message):
         f"Введи корректный id пользователя, которого нужно добавить как администратора\nНапример:\n{message.from_user.id}",
         reply_markup=keyboard,
     )
-    bot.register_next_step_handler(answer, handle_add_host)
+    bot.register_next_step_handler(answer, handle_add_new_admin)
 
 
 def handle_add_new_admin(message: types.Message):
