@@ -93,7 +93,8 @@ class Middleware(BaseMiddleware):
 
 
 def send_startup_message():
-    for id in telegram_bot_config.userid:
+    admins = Middleware._get_admins('')
+    for id in admins:
         bot.send_message(id, f"Бот запущен, версия: {telegram_bot_config.version}")
 
 
