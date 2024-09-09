@@ -66,6 +66,11 @@ class Middleware(BaseMiddleware):
             logger.error("Error in processing message: %s", str(exception))
 
 
+def send_startup_message():
+    for id in telegram_bot_config.userid:
+        bot.send_message(id, f"Бот запущен, версия: {telegram_bot_config.version}")
+
+
 @bot.message_handler(commands=["start"], chat_types=["private"])
 def handle_start(message: types.Message):
     try:
@@ -876,6 +881,7 @@ if __name__ == "__main__":
         bot_me = bot.get_me()
         os.system(f"logger -s -t telegram4kvas Bot @{bot_me.username} version: {telegram_bot_config.version} running...")
         logger.info("Bot @%s running", bot_me.username)
+        send_startup_message()
         bot.infinity_polling(skip_pending=True, timeout=60)
     except Exception as e:
         logger.exception("Fatal error occurred while running the bot")
