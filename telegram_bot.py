@@ -198,6 +198,7 @@ def handle_add_new_admin(message: types.Message):
         }
         with open(CONFIG_PATH, 'w', encoding="UTF-8") as config_file:
             config.write(config_file)
+        bot.send_message(message.chat.id, f"Пользователь {message.text} добавлен")
     except Exception:
         add_admin_handler(message=message)
 
