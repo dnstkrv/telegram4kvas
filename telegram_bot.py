@@ -770,7 +770,7 @@ def export_hosts(message: types.Message):
     try:
         logger.info("User %s requested to export hosts", message.from_user.username)
         src = "/opt/etc/.kvas/backup/kvas_export.txt"
-        subprocess.Popen(["kvas", "export", src]).wait()
+        subprocess.Popen(["kvas", "export", "/opt/etc/.kvas/backup/kvas_export.txt"]).wait()
         bot.send_document(message.chat.id, open(src, "rb"))
     except Exception as e:
         logger.exception("Error in export_hosts: %s", str(e))
