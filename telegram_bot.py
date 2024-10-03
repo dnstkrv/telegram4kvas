@@ -155,6 +155,7 @@ def service_message(message: types.Message):
             types.KeyboardButton("Терминал"),
             types.KeyboardButton("Обновить бота"),
             types.KeyboardButton("Добавить пользователя"),
+            types.KeyboardButton("Запросить лог"),
             types.KeyboardButton("Назад"),
         ]
         keyboard.add(*buttons)
@@ -472,6 +473,37 @@ def handle_list_interfaces(message: types.Message):
     except Exception as e:
         logger.exception("Error in handle_list_interfaces: %s", str(e))
         bot.send_message(message.chat.id, "Произошла ошибка, попробуйте позже.")
+
+@bot.message_handler(regexp="Запросить лог", chat_types=["private"])
+def log_request_handler(message: types.Message):
+    logger.info("User %s requested log", message.from_user.username)
+    answer = bot.send_message(
+        message.chat.id,
+        "Введите количество строк лога, которые необходимо прислать. Нумерация начинается с конца файла"
+    )
+    bot.register_next_step_handler(answer, handle_log_request)
+
+
+def handle_log_request(message: types.Message):
+    try:
+        with tempfile.TemporaryFile() as tempf:
+            process = subprocess.Popen(
+                [
+                    f'cat "/opt/etc/telegram4kvas/telegram4kvas_log.txt" | tail -n {message.text}'
+                ],
+                shell=True,
+                stdout=tempf,
+            )
+            process.wait()
+            tempf.seek(0)
+            output = tempf.read().decode("utf-8")
+            log_message = clean_string(output)
+
+
+        send_long_message(log_message, message)
+    except Exception as e:
+        logger.exception("Error in log request: %s", str(e))
+        bot.send_message(message.chat.id, f"Ошибка: {str(e)}")
 
 
 @bot.message_handler(regexp="Смена интерфейса", chat_types=["private"])
