@@ -178,7 +178,7 @@ def add_admin_handler(message: types.Message):
     keyboard.add(*buttons)
     answer = bot.send_message(
         message.chat.id,
-        f"Введи корректный id пользователя, которого нужно добавить как администратора\nНапример:\n{message.from_user.id}",
+        f"Введите корректный id пользователя, которого нужно добавить как администратора\nНапример:\n{message.from_user.id}",
         reply_markup=keyboard,
     )
     bot.register_next_step_handler(answer, handle_add_new_admin)
@@ -189,17 +189,25 @@ def handle_add_new_admin(message: types.Message):
         service_message(message=message)
         return
     try:
-        admins = [int(message.text)]
+        new_admin = int(message.text)
+        admins = [new_admin]
+        
         if os.path.isfile(CONFIG_PATH):
             config.read(CONFIG_PATH, encoding="UTF-8")
-            admins.extend([int(a) for a in config.get("ADMINS", "users_ids").split(",")])
+            existing_admins = config.get("ADMINS", "users_ids", fallback="")
+            if existing_admins:
+                admins.extend([int(a) for a in existing_admins.split(",") if a.strip().isdigit()])
+        
         config['ADMINS'] = {
-            'users_ids': admins,
+            'users_ids': ','.join(map(str, set(admins))),
         }
+        
         with open(CONFIG_PATH, 'w', encoding="UTF-8") as config_file:
             config.write(config_file)
-        bot.send_message(message.chat.id, f"Пользователь {message.text} добавлен")
-    except Exception:
+        
+        bot.send_message(message.chat.id, f"Пользователь {new_admin} добавлен")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"Ошибка: {str(e)}")
         add_admin_handler(message=message)
 
 
