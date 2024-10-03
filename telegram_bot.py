@@ -82,7 +82,7 @@ class Middleware(BaseMiddleware):
             for id in admins:
                 bot.send_message(
                     id,
-                    f"Попытка неавторизованного доступа:\n{user_link} ({username}), UserID: {message.from_user.id}",
+                    f"Попытка неавторизованного доступа:\n{user_link}\({username}\), UserID: {message.from_user.id}",
                     parse_mode="MarkdownV2",
                 )
             return CancelUpdate()
