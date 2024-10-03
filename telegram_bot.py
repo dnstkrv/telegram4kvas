@@ -82,7 +82,7 @@ class Middleware(BaseMiddleware):
             for id in admins:
                 bot.send_message(
                     id,
-                    f"Попытка неавторизованного доступа:\n{user_link} ({username}), UserID: {message.from_user.id}",
+                    f"Попытка неавторизованного доступа:\n{user_link}\({username}\), UserID: {message.from_user.id}",
                     parse_mode="MarkdownV2",
                 )
             return CancelUpdate()
@@ -155,6 +155,7 @@ def service_message(message: types.Message):
             types.KeyboardButton("Терминал"),
             types.KeyboardButton("Обновить бота"),
             types.KeyboardButton("Добавить пользователя"),
+            types.KeyboardButton("Запросить лог"),
             types.KeyboardButton("Назад"),
         ]
         keyboard.add(*buttons)
@@ -178,7 +179,7 @@ def add_admin_handler(message: types.Message):
     keyboard.add(*buttons)
     answer = bot.send_message(
         message.chat.id,
-        f"Введи корректный id пользователя, которого нужно добавить как администратора\nНапример:\n{message.from_user.id}",
+        f"Введите корректный id пользователя, которого нужно добавить как администратора\nНапример:\n{message.from_user.id}",
         reply_markup=keyboard,
     )
     bot.register_next_step_handler(answer, handle_add_new_admin)
@@ -189,17 +190,25 @@ def handle_add_new_admin(message: types.Message):
         service_message(message=message)
         return
     try:
-        admins = [int(message.text)]
+        new_admin = int(message.text)
+        admins = [new_admin]
+        
         if os.path.isfile(CONFIG_PATH):
             config.read(CONFIG_PATH, encoding="UTF-8")
-            admins.extend([int(a) for a in config.get("ADMINS", "users_ids").split(",")])
+            existing_admins = config.get("ADMINS", "users_ids", fallback="")
+            if existing_admins:
+                admins.extend([int(a) for a in existing_admins.split(",") if a.strip().isdigit()])
+        
         config['ADMINS'] = {
-            'users_ids': admins,
+            'users_ids': ','.join(map(str, set(admins))),
         }
+        
         with open(CONFIG_PATH, 'w', encoding="UTF-8") as config_file:
             config.write(config_file)
-        bot.send_message(message.chat.id, f"Пользователь {message.text} добавлен")
-    except Exception:
+        
+        bot.send_message(message.chat.id, f"Пользователь {new_admin} добавлен")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"Ошибка: {str(e)}")
         add_admin_handler(message=message)
 
 
@@ -464,6 +473,37 @@ def handle_list_interfaces(message: types.Message):
     except Exception as e:
         logger.exception("Error in handle_list_interfaces: %s", str(e))
         bot.send_message(message.chat.id, "Произошла ошибка, попробуйте позже.")
+
+@bot.message_handler(regexp="Запросить лог", chat_types=["private"])
+def log_request_handler(message: types.Message):
+    logger.info("User %s requested log", message.from_user.username)
+    answer = bot.send_message(
+        message.chat.id,
+        "Введите количество строк лога, которые необходимо прислать. Нумерация начинается с конца файла"
+    )
+    bot.register_next_step_handler(answer, handle_log_request)
+
+
+def handle_log_request(message: types.Message):
+    try:
+        with tempfile.TemporaryFile() as tempf:
+            process = subprocess.Popen(
+                [
+                    f'cat "/opt/etc/telegram4kvas/telegram4kvas_log.txt" | tail -n {message.text}'
+                ],
+                shell=True,
+                stdout=tempf,
+            )
+            process.wait()
+            tempf.seek(0)
+            output = tempf.read().decode("utf-8")
+            log_message = clean_string(output)
+
+
+        send_long_message(log_message, message)
+    except Exception as e:
+        logger.exception("Error in log request: %s", str(e))
+        bot.send_message(message.chat.id, f"Ошибка: {str(e)}")
 
 
 @bot.message_handler(regexp="Смена интерфейса", chat_types=["private"])

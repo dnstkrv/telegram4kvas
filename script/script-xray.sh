@@ -25,6 +25,6 @@ if [ "$1" = "-uninstall" ]; then
     /opt/etc/init.d/S24xray stop
     opkg remove xray xray-core > /dev/null
     chmod 777 /opt/etc/init.d/S24xray || rm -Rfv /opt/etc/init.d/S24xray
-    chmod 777 /opt/etc/xray || rm -Rfv /opt/etc/xray
+    chmod 777 /opt/etc/xray/config.json || rm -Rfv /opt/etc/xray/config.json
     echo "XRay и конфиг удалены"
 fi
