@@ -890,7 +890,7 @@ def run_test(message: types.Message):
             test_proc.wait()
             tempf.seek(0)
             output = clean_string(tempf.read().decode("utf-8"))
-            send_long_message(output, message)
+            send_long_message(clean_string(output), message)
     except Exception as e:
         logger.exception("Error in run_test: %s", str(e))
         bot.send_message(message.chat.id, "Произошла ошибка при запуске теста.")
