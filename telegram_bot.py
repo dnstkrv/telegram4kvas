@@ -720,7 +720,7 @@ def list_hosts(message: types.Message):
             bot.send_message(message.chat.id, "Список пуст")
         else:
             sites.sort()
-            response = mcode("\r".join(sites))
+            response = "\r".join(sites)
             send_long_message(response, message)
     except Exception as e:
         logger.exception("Error in list_hosts: %s", str(e))
@@ -866,7 +866,7 @@ def custom_command(message: types.Message):
                 output_proc.wait()
                 tempf.seek(0)
                 output = tempf.read().decode("utf-8")
-                send_long_message(output, message)
+                send_long_message(clean_string(output), message)
     except Exception as e:
         logger.exception("Error in custom_command: %s", str(e))
         bot.send_message(message.chat.id, "Произошла ошибка при выполнении команды.")
@@ -905,6 +905,7 @@ def run_debug(message: types.Message):
             f"Запущена команда {mcode('kvas debug')}",
             parse_mode="MarkdownV2",
         )
+        subprocess.Popen(["touch", "/opt/root/kvas.debug"]).wait()
         subprocess.Popen(["kvas", "debug", "/opt/root/kvas.debug"]).wait()
         debug_file = InputFile("/opt/root/kvas.debug")
         bot.send_document(message.chat.id, debug_file, parse_mode="MarkdownV2")
