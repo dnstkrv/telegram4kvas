@@ -810,11 +810,18 @@ def export_hosts(message: types.Message):
     try:
         logger.info("User %s requested to export hosts", message.from_user.username)
         src = "/opt/etc/.kvas/backup/kvas_export.txt"
-        subprocess.Popen(["kvas", "export", "/opt/etc/.kvas/backup/kvas_export.txt"]).wait()
+        result = subprocess.run(["kvas", "export", src], capture_output=True, text=True)
+
+        if result.returncode != 0:
+            logger.error("kvas export failed: %s", result.stderr)
+            bot.send_message(message.chat.id, "Произошла ошибка при экспорте хостов.")
+            return
+
         bot.send_document(message.chat.id, open(src, "rb"))
     except Exception as e:
         logger.exception("Error in export_hosts: %s", str(e))
         bot.send_message(message.chat.id, "Произошла ошибка при экспорте хостов.")
+
 
 
 @bot.message_handler(regexp="Перезагрузить роутер", chat_types=["private"])
@@ -905,9 +912,10 @@ def run_debug(message: types.Message):
             f"Запущена команда {mcode('kvas debug')}",
             parse_mode="MarkdownV2",
         )
-        subprocess.Popen(["touch", "/opt/root/kvas.debug"]).wait()
-        subprocess.Popen(["kvas", "debug", "/opt/root/kvas.debug"]).wait()
-        debug_file = InputFile("/opt/root/kvas.debug")
+        src = "/opt/root/kvas.debug"
+        process = subprocess.Popen(["kvas", "debug", src])
+        process.wait()
+        debug_file = InputFile(src)
         bot.send_document(message.chat.id, debug_file, parse_mode="MarkdownV2")
     except Exception as e:
         logger.exception("Error in run_debug: %s", str(e))
