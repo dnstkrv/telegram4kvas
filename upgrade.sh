@@ -17,4 +17,4 @@ echo "version = '$latest_version'" >> $config_path
 
 logger -s -t telegram4kvas 'Бот обновлен'
 
-/opt/etc/init.d/S98telegram4kvas start
+/opt/etc/init.d/S98telegram4kvas restart
