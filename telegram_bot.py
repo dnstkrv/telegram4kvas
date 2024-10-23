@@ -403,6 +403,8 @@ def vless(url):
             dict_result["flow"] = ""
         if "sid" not in dict_result:
             dict_result["sid"] = ""
+        if "spx" not in dict_result:
+            dict_result["spx"] = ""
 
         json_data = (
             '{"log": {"loglevel": "info"},"routing": {"rules": [],"domainStrategy": "AsIs"},'
