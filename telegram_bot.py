@@ -94,8 +94,17 @@ class Middleware(BaseMiddleware):
 
 def send_startup_message():
     admins = Middleware._get_admins('')
+    startMenu = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    item1 = types.KeyboardButton("Управление хостами")
+    item2 = types.KeyboardButton("Управление подключениями")
+    item3 = types.KeyboardButton("Сервис")
+    startMenu.add(item1, item2, item3)
+
     for id in admins:
-        bot.send_message(id, f"Бот запущен, версия: {telegram_bot_config.version}")
+        bot.send_message(id,
+                         f"Бот запущен, версия: {telegram_bot_config.version}",
+                         reply_markup=startMenu,
+                         )
 
 
 @bot.message_handler(commands=["start"], chat_types=["private"])
