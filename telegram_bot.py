@@ -5,6 +5,7 @@ import re
 import subprocess
 import tempfile
 import time
+import sys
 from contextlib import suppress
 from logging.handlers import RotatingFileHandler
 from urllib.parse import parse_qs, urlparse
@@ -1016,12 +1017,18 @@ if __name__ == "__main__":
         connection_attempt = 0
         while connection_attempt != telegram_bot_config.reconnection_attempts:
             connection_attempt +=1
+            logger.info(f'Connection attempt № {connection_attempt}...')
             try:     
                 bot_me = bot.get_me()
                 connection_attempt = telegram_bot_config.reconnection_attempts
             except Exception as e: 
-                logger.warning(f'Connection fail. Wait {telegram_bot_config.reconnection_timeout} seconds to reconnect')
-                time.sleep(telegram_bot_config.reconnection_timeout)
+                if connection_attempt != telegram_bot_config.reconnection_attempts: 
+                    logger.warning(f'Connection attempt №{connection_attempt} failed. Wait {telegram_bot_config.reconnection_timeout} seconds to reconnect')
+                    time.sleep(telegram_bot_config.reconnection_timeout)
+                else: 
+                    logger.warning(f'Connection attempt №{connection_attempt} failed.')
+                    logger.error('Connection failed. Check internet connection. Bot shutdown')
+                    sys.exit()
         os.system(
             f"logger -s -t telegram4kvas Bot @{bot_me.username} version: {telegram_bot_config.version} running..."
         )
