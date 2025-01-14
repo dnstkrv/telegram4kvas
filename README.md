@@ -12,6 +12,7 @@ curl -OLf https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/script/in
 
 Конфигурация хранится в файле **/opt/etc/telegram4kvas/telegram_bot_config.py**.
 
+Изменением **reconnection_timeout** и **reconnection_attempts** вы можете изменять количество переподключений и таймаут, если при старте роутера интернет появляется не сразу
 
 # Запуск
 Бот запускается командой 

@@ -12,6 +12,14 @@ rm $bot_path
 
 curl -JLo $bot_path $package_url
 
+if ! grep -q "reconnection_timeout" $config_path; then
+  echo "reconnection_timeout = 60" >> $config_path
+fi
+
+if ! grep -q "reconnection_attempts" $config_path; then
+  echo "reconnection_attempts = 5" >> $config_path
+fi
+
 sed -i '/version/d' $config_path 
 echo "version = '$latest_version'" >> $config_path
 
