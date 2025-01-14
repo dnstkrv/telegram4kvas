@@ -1028,10 +1028,13 @@ if __name__ == "__main__":
                 else: 
                     logger.warning(f'Connection attempt №{connection_attempt} failed.')
                     logger.error('Connection failed. Check internet connection. Bot shutdown')
+                    os.system(
+                        f"logger -s -t telegram4kvas Connection failed after {connection_attempt} attempts. Check internet connection. Bot shutdown"
+                             )
                     sys.exit()
         os.system(
             f"logger -s -t telegram4kvas Bot @{bot_me.username} version: {telegram_bot_config.version} running..."
-        )
+                 )
         logger.info("Bot @%s running", bot_me.username)
         send_startup_message()
         bot.infinity_polling(skip_pending=True, timeout=60)
