@@ -1017,25 +1017,31 @@ if __name__ == "__main__":
         connection_attempt = 0
         while connection_attempt != telegram_bot_config.reconnection_attempts:
             connection_attempt +=1
-            logger.info(f'Connection attempt № {connection_attempt}...')
+            logger.info(f'Trying to connect to the telegram server. Attempt №{connection_attempt}')
+            os.system(
+                f"logger -s -t telegram4kvas Trying to connect to the telegram server. Attempt №{connection_attempt}"
+                      )
             try:     
                 bot_me = bot.get_me()
                 connection_attempt = telegram_bot_config.reconnection_attempts
             except Exception as e: 
                 if connection_attempt != telegram_bot_config.reconnection_attempts: 
-                    logger.warning(f'Connection attempt №{connection_attempt} failed. Wait {telegram_bot_config.reconnection_timeout} seconds to reconnect')
+                    logger.warning(f'Connection attempt №{connection_attempt} failed. Wait {telegram_bot_config.reconnection_timeout} seconds before trying to connect again.')
+                    os.system(
+                        f"logger -s -t telegram4kvas Connection attempt №{connection_attempt} failed. Wait {telegram_bot_config.reconnection_timeout} seconds before trying to connect again."
+                             )
                     time.sleep(telegram_bot_config.reconnection_timeout)
                 else: 
-                    logger.warning(f'Connection attempt №{connection_attempt} failed.')
-                    logger.error('Connection failed. Check internet connection. Bot shutdown')
+                    logger.warning(f'Connection failed after {connection_attempt} attempts.')
+                    logger.error(f'Connection failed after {connection_attempt} attempts. Check internet connection! Bot is shutdown.')
                     os.system(
-                        f"logger -s -t telegram4kvas Connection failed after {connection_attempt} attempts. Check internet connection. Bot shutdown"
+                        f"logger -s -t telegram4kvas Connection failed after {connection_attempt} attempts. Check internet connection! Bot shutdown."
                              )
                     sys.exit()
         os.system(
-            f"logger -s -t telegram4kvas Bot @{bot_me.username} version: {telegram_bot_config.version} running..."
+            f"logger -s -t telegram4kvas Connection successful. Bot @{bot_me.username} running [{telegram_bot_config.version}]."
                  )
-        logger.info("Bot @%s running", bot_me.username)
+        logger.info(f'Connection successful. Bot @{bot_me.username} running [{telegram_bot_config.version}].')
         send_startup_message()
         bot.infinity_polling(skip_pending=True, timeout=60)
     except Exception as e:
