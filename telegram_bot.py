@@ -8,7 +8,6 @@ import time
 import sys
 from contextlib import suppress
 from logging.handlers import RotatingFileHandler
-from urllib.parse import parse_qs, urlparse
 
 import requests
 import telebot
@@ -22,7 +21,6 @@ import telegram_bot_config
 config = configparser.ConfigParser()
 CONFIG_PATH = "/opt/etc/telegram4kvas/config.ini"
 
-# Настройка логирования
 logger = logging.getLogger(name="telegram4kvas")
 logger.setLevel(logging.DEBUG)
 
@@ -37,6 +35,7 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 user_states = {}
+handler_called = False
 
 bot = telebot.TeleBot(
     telegram_bot_config.token,
@@ -77,7 +76,7 @@ class Middleware(BaseMiddleware):
             username = "Неизвестно"
             if message.from_user.username is not None:
                 username = f"@{message.from_user.username}"
-            
+
             user_link = f"[{message.from_user.full_name}](tg://user?id={message.from_user.id})"
 
             for id in admins:
@@ -202,20 +201,20 @@ def handle_add_new_admin(message: types.Message):
     try:
         new_admin = int(message.text)
         admins = [new_admin]
-        
+
         if os.path.isfile(CONFIG_PATH):
             config.read(CONFIG_PATH, encoding="UTF-8")
             existing_admins = config.get("ADMINS", "users_ids", fallback="")
             if existing_admins:
                 admins.extend([int(a) for a in existing_admins.split(",") if a.strip().isdigit()])
-        
+
         config['ADMINS'] = {
             'users_ids': ','.join(map(str, set(admins))),
         }
-        
+
         with open(CONFIG_PATH, 'w', encoding="UTF-8") as config_file:
             config.write(config_file)
-        
+
         bot.send_message(message.chat.id, f"Пользователь {new_admin} добавлен")
     except Exception as e:
         bot.send_message(message.chat.id, f"Ошибка: {str(e)}")
@@ -232,8 +231,6 @@ def connections_message(message: types.Message):
         buttons = [
             types.KeyboardButton("Список интерфейсов"),
             types.KeyboardButton("Смена интерфейса"),
-            types.KeyboardButton("Установить XRay"),
-            types.KeyboardButton("Удалить XRay"),
             types.KeyboardButton("Назад"),
         ]
         keyboard.add(*buttons)
@@ -297,39 +294,11 @@ def custom_command_prompt(message: types.Message):
 
 
 def clean_string(text: str) -> str:
-    return (
-        text.replace("-", "")
-        .replace("[33m", "")
-        .replace("[m", "")
-        .replace("[1;32m", "")
-        .replace("[1;31m", "")
-        .replace("[7D", "")
-        .replace("[8D", "")
-        .replace("[10D", "")
-        .replace("[9D", "")
-        .replace("[11D", "")
-        .replace("[6D", "")
-        .replace("[12D", "")
-        .replace("[1;31m", "")
-        .replace("[36m", "")
-        .replace("[14D", "")
-        .replace("[1;37m", "")
-        .replace("[42D", "")
-        .replace("[56D", "")
-        .replace("[45D", "")
-    )
+    text = re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
+    text = text.replace("-", "")
+    text = re.sub(r'[^\S\r\n]+', ' ', text).strip()
 
-
-def clean_string_interfaces(text: str) -> str:
-    return (
-        text.replace("-", "")
-        .replace("[36m", "")
-        .replace("[m", "")
-        .replace("[8D", "")
-        .replace("[1;32m", "")
-        .replace("[9D", "")
-        .replace("[1;31m", "")
-    )
+    return text
 
 
 def send_long_message(output, message: types.Message):
@@ -354,16 +323,16 @@ def scan_interfaces(param="Q"):
         logger.info("Scanning interfaces with parameter: %s", param)
         if param == "no_shadowsocks":
             command = [
-                f'echo "Q" | kvas vpn set | grep -v "shadowsocks" | grep "Интерфейс"'
+                f'echo "Q" | kvas vpn set | grep -v "shadowsocks" | grep -v "Broadband connection" | grep -v "vless" | grep -v "Home network" | grep -E "В СЕТИ|ОТКЛЮЧЕН"'
             ]
         else:
-            command = [f'echo "{param}" | kvas vpn set | grep "Интерфейс"']
+            command = [f'echo "{param}" | kvas vpn set | grep -v "Broadband connection" | grep -v "Home network" | grep -v "vless" | grep -E "В СЕТИ|ОТКЛЮЧЕН"']
         with tempfile.TemporaryFile() as tempf:
             process = subprocess.Popen(command, shell=True, stdout=tempf)
             process.wait()
             tempf.seek(0)
             output = tempf.read().decode("utf-8")
-            output_clean = clean_string_interfaces(output)
+            output_clean = clean_string(output)
         return output_clean
     except Exception as e:
         logger.exception("Error during interface scanning: %s", str(e))
@@ -373,102 +342,25 @@ def scan_interfaces(param="Q"):
 def make_keyboard_interfaces(list_interfaces):
     try:
         logger.debug("Creating keyboard for interfaces")
-        list_interfaces_split = list_interfaces.split()
-        word_seek = "Интерфейс"
+
+        list_interfaces_split = list_interfaces.splitlines()
         interface_next = []
-        for word in list_interfaces_split:
-            if word == word_seek:
-                ind = list_interfaces_split.index(word_seek)
-                list_interfaces_split.pop(list_interfaces_split.index(word_seek))
-                interface_next.append(list_interfaces_split[ind])
+
+        for line in list_interfaces_split:
+            interface_name = line.strip(".")[0]
+            interface_next.append(interface_name)
 
         keyboard_interfaces = types.InlineKeyboardMarkup()
-        for i in range(0, len(interface_next)):
+        for interface_name in interface_next:
             keyboard_interfaces.add(
-                types.InlineKeyboardButton(text=interface_next[i], callback_data=str(i))
+                types.InlineKeyboardButton(text=interface_name, callback_data=interface_name)
             )
 
         return keyboard_interfaces
+
     except Exception as e:
         logger.exception("Error in make_keyboard_interfaces: %s", str(e))
-        return types.InlineKeyboardMarkup()  # Вернём пустую клавиатуру в случае ошибки
-
-
-def vless(url):
-    try:
-        logger.info("Creating XRay config from VLESS URL")
-        replace_symbol = "[\[|'|\]]"
-        dict_str = parse_qs(urlparse(url).query)
-        dict_netloc = {}
-        dict_netloc["id"] = re.split("@|:|\n", (urlparse(url).netloc))[0]
-        dict_netloc["server"] = re.split("@|:|\n", (urlparse(url).netloc))[1]
-        dict_netloc["port"] = re.split("@|:|\n", (urlparse(url).netloc))[2]
-        dict_result = {**dict_str, **dict_netloc}
-        get_routerip = '/opt/sbin/ip a | grep ": br0:" -A4 | grep "inet " | tr -s " " | cut -d" " -f3 | cut -d"/" -f1'
-        routerip = (
-            str(subprocess.check_output(get_routerip, shell=True))
-            .replace("b", "")
-            .replace("'", "")
-            .replace("\n", "")
-        )
-
-        if "flow" not in dict_result:
-            dict_result["flow"] = ""
-        if "sid" not in dict_result:
-            dict_result["sid"] = ""
-        if "spx" not in dict_result:
-            dict_result["spx"] = ""
-
-        json_data = (
-            '{"log": {"loglevel": "info"},"routing": {"rules": [],"domainStrategy": "AsIs"},'
-            '"inbounds": [{"listen":"'
-            + str(routerip)
-            + '","port": "1081","protocol": "socks"}],'
-            '"outbounds": [{"tag": "vless","protocol": "vless","settings": {"vnext": ['
-            '{"address":"'
-            + re.sub(replace_symbol, "", str(dict_result["server"]))
-            + '",'
-            '"port":'
-            + re.sub(replace_symbol, "", str(dict_result["port"]))
-            + ',"users": ['
-            '{"id":"' + re.sub(replace_symbol, "", str(dict_result["id"])) + '",'
-            '"flow":"' + re.sub(replace_symbol, "", str(dict_result["flow"])) + '",'
-            '"encryption": "none"}]}]},"streamSettings": {'
-            '"network":"' + re.sub(replace_symbol, "", str(dict_result["type"])) + '",'
-            '"security":"'
-            + re.sub(replace_symbol, "", str(dict_result["security"]))
-            + '",'
-            '"realitySettings": {'
-            '"publicKey":"' + re.sub(replace_symbol, "", str(dict_result["pbk"])) + '",'
-            '"fingerprint":"'
-            + re.sub(replace_symbol, "", str(dict_result["fp"]))
-            + '",'
-            '"serverName":"'
-            + re.sub(replace_symbol, "", str(dict_result["sni"]))
-            + '",'
-            '"shortId":"' + re.sub(replace_symbol, "", str(dict_result["sid"])) + '",'
-            '"spiderX":"' + re.sub(replace_symbol, "", str(dict_result["spx"])) + '"'
-            '},"tcpSettings": {"header": {"type": "none"}}}}]}'
-        )
-
-        with open("/opt/etc/xray/config.json", "w") as file:
-            file.write(json_data)
-    except Exception as e:
-        logger.exception("Error in vless function: %s", str(e))
-
-
-@bot.message_handler(regexp="Установить XRay", chat_types=["private"])
-def install_xray_prompt(message: types.Message):
-    try:
-        logger.info("User %s prompted to install XRay", message.from_user.username)
-        answer = bot.send_message(
-            message.chat.id,
-            "Введите ключ в формате vless://",
-        )
-        bot.register_next_step_handler(answer, handle_install_xray)
-    except Exception as e:
-        logger.exception("Error in install_xray_prompt: %s", str(e))
-        bot.send_message(message.chat.id, "Произошла ошибка, попробуйте позже.")
+        return types.InlineKeyboardMarkup()
 
 
 @bot.message_handler(regexp="Список интерфейсов", chat_types=["private"])
@@ -545,101 +437,34 @@ def vpn_set_prompt(message: types.Message):
         bot.send_message(message.chat.id, "Произошла ошибка, попробуйте позже.")
 
 
-@bot.callback_query_handler(func=lambda call: True)
+@bot.callback_query_handler(func=lambda call: call.data.isdigit())
 def handle_vpn_set(call):
     try:
-        interface_num = int(call.data) + 2
+        interface_num = int(call.data)
         logger.info(
             "User %s selected interface %d", call.from_user.username, interface_num
         )
+
         bot.edit_message_reply_markup(
             call.message.chat.id, message_id=call.message.message_id, reply_markup=None
         )
 
         bot.send_message(
             call.message.chat.id,
-            "Производится выбор интерфейса",
-            parse_mode="MarkdownV2",
+            "Производится выбор интерфейса, ожидайте",
         )
+
+        scan_interfaces(interface_num)
+
 
         bot.send_message(
             call.message.chat.id,
-            mcode(scan_interfaces(interface_num)),
-            parse_mode="MarkdownV2",
+            "Готово",
         )
+
     except Exception as e:
         logger.exception("Error in handle_vpn_set: %s", str(e))
         bot.send_message(call.message.chat.id, "Произошла ошибка при смене интерфейса.")
-
-
-def handle_install_xray(message: types.Message):
-    try:
-        logger.info("User %s is installing XRay", message.from_user.username)
-        os.system("mkdir /opt/etc/xray")
-        os.system("touch /opt/etc/xray/config.json")
-        vless(message.text)
-
-        bot.send_message(
-            message.chat.id,
-            "Ключ установлен, устанавливается XRay",
-        )
-
-        subprocess.Popen(
-            [
-                "sed",
-                "-i",
-                '\'s/"L2TP"/"L2TP","Proxy"/',
-                "/opt/apps/kvas/bin/libs/vpn",
-            ]
-        ).wait()
-
-        with tempfile.TemporaryFile() as tempf:
-            process = subprocess.Popen(
-                [
-                    "curl -o /opt/script-xray.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/script/script-xray.sh && sh /opt/script-xray.sh -install && rm /opt/script-xray.sh"
-                ],
-                shell=True,
-                stdout=tempf,
-            )
-            process.wait()
-            tempf.seek(0)
-            output = tempf.read().decode("utf-8")
-            output_clean = clean_string(output)
-
-            bot.send_message(
-                message.chat.id,
-                mcode("\n" + output_clean + "\n"),
-                parse_mode="MarkdownV2",
-            )
-    except Exception as e:
-        logger.exception("Error in handle_install_xray: %s", str(e))
-        bot.send_message(message.chat.id, "Произошла ошибка при установке XRay.")
-
-
-@bot.message_handler(regexp="Удалить XRay", chat_types=["private"])
-def uninstall_xray(message: types.Message):
-    try:
-        logger.info("User %s is uninstalling XRay", message.from_user.username)
-        with tempfile.TemporaryFile() as tempf:
-            process = subprocess.Popen(
-                [
-                    "curl -o /opt/script-xray.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/script/script-xray.sh && sh /opt/script-xray.sh -uninstall && rm /opt/script-xray.sh"
-                ],
-                shell=True,
-                stdout=tempf,
-            )
-            process.wait()
-            tempf.seek(0)
-            output = tempf.read().decode("utf-8")
-
-            bot.send_message(
-                message.chat.id,
-                mcode("\n" + output + "\n"),
-                parse_mode="MarkdownV2",
-            )
-    except Exception as e:
-        logger.exception("Error in uninstall_xray: %s", str(e))
-        bot.send_message(message.chat.id, "Произошла ошибка при удалении XRay.")
 
 
 def handle_add_host(message: types.Message):
@@ -727,7 +552,7 @@ def handle_delete_host(message: types.Message):
 def list_hosts(message: types.Message):
     try:
         logger.info("User %s requested list of hosts", message.from_user.username)
-        src = "/opt/etc/hosts.list"
+        src = "/opt/etc/hosts.list" if os.path.exists("/opt/etc/hosts.list") else "/opt/etc/kvas.list"
         with open(src) as file:
             sites = file.readlines()
 
@@ -769,13 +594,14 @@ def remove_all_hosts(message: types.Message):
             output = clean_string(
                 tempf.read()
                 .decode("utf-8")
-                .replace("Список разблокировки будет полностью очищен. Уверены?", "")
+                .replace("Защищённый список будет очищен. Уверены?", "")
+                .replace("Предыдущий защищённый список был сохранён в файл /opt/etc/.kvas/backup/kvas.list", "")
             )
             bot.send_message(
                 message.chat.id, mcode("\n" + output + "\n"), parse_mode="MarkdownV2"
             )
 
-        backup_file = InputFile("/opt/etc/.kvas/backup/hosts.list")
+        backup_file = InputFile("/opt/etc/.kvas/backup/kvas.list")
         bot.send_document(message.chat.id, backup_file)
     except Exception as e:
         logger.exception("Error in remove_all_hosts: %s", str(e))
@@ -802,6 +628,10 @@ def handle_import(message: types.Message):
         logger.info("User %s is importing hosts", message.from_user.username)
         file_info = bot.get_file(message.document.file_id)
         downloaded_file = bot.download_file(file_info.file_path)
+        bot.send_message(
+            message.chat.id,
+            "Файл получен, ожидайте...",
+        )
         src = "/opt/kvastelegram.import"
         with open(src, "wb") as file_import:
             file_import.write(downloaded_file)
@@ -1021,17 +851,17 @@ if __name__ == "__main__":
             os.system(
                 f"logger -s -t telegram4kvas Trying to connect to the telegram server. Attempt №{connection_attempt}"
                       )
-            try:     
+            try:
                 bot_me = bot.get_me()
                 connection_attempt = telegram_bot_config.reconnection_attempts
-            except Exception as e: 
-                if connection_attempt != telegram_bot_config.reconnection_attempts: 
+            except Exception as e:
+                if connection_attempt != telegram_bot_config.reconnection_attempts:
                     logger.warning(f'Connection attempt №{connection_attempt} failed. Wait {telegram_bot_config.reconnection_timeout} seconds before trying to connect again.')
                     os.system(
                         f"logger -s -t telegram4kvas Connection attempt №{connection_attempt} failed. Wait {telegram_bot_config.reconnection_timeout} seconds before trying to connect again."
                              )
                     time.sleep(telegram_bot_config.reconnection_timeout)
-                else: 
+                else:
                     logger.warning(f'Connection failed after {connection_attempt} attempts.')
                     logger.error(f'Connection failed after {connection_attempt} attempts. Check internet connection! Bot is shutdown.')
                     os.system(
