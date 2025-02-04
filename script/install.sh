@@ -6,7 +6,6 @@ release_url="https://api.github.com/repos/dnstkrv/telegram4kvas/releases"
 latest_version=$(curl -sH "Accept: application/vnd.github.v3+json" "${release_url}/latest" | grep tag_name | awk -F\" '{print $4}')
 PACKAGES="python3-base python3 python3-light libpython3 python3-logging python3-email python3-urllib python3-urllib3 python3-idna python3-requests python3-certifi python3-chardet python3-openssl python3-codecs"
 
-# Функция для установки пакетов
 install_packages() {
     freespace=$(df -k /opt | awk 'NR==2 {print $4}')
 
@@ -51,12 +50,10 @@ install_packages() {
             break
         done
     done
-    echo ""  # Перенос строки после завершения
+    echo ""
 }
 
 
-
-# Удаление бота и зависимостей
 if [ "$1" = "-remove" ]; then
     /opt/etc/init.d/S98telegram4kvas stop
     rm -f /opt/etc/init.d/S98telegram4kvas
@@ -66,9 +63,7 @@ if [ "$1" = "-remove" ]; then
     exit 0
 fi
 
-# Установка бота
 if [ "$1" = "-install" ]; then
-    # Проверка свободного места
     freespace=$(df -k | grep opt | awk '/[0-9]%/{print $(NF-2)}')
     freespaceh=$(df -kh | grep opt | awk '/[0-9]%/{print $(NF-2)}')
     if [ $freespace -le 10000 ]; then
@@ -76,10 +71,8 @@ if [ "$1" = "-install" ]; then
         exit 1
     fi
 
-    # Обновление списка пакетов
     opkg update &> /dev/null
 
-    # Проверка установки КВАС
     if opkg list-installed | grep -q kvas; then
         echo "КВАС установлен, продолжаем..."
     else
@@ -87,43 +80,34 @@ if [ "$1" = "-install" ]; then
         exit 1
     fi
 
-    # Установка пакетов
     install_packages
 
-    # Создание директории для бота
     mkdir -p "${bot_path}"
 
-    # Скачивание и распаковка архива
     echo "Скачивание архива с GitHub..."
     curl -Lo /opt/tmp/main.zip https://github.com/dnstkrv/telegram4kvas/archive/refs/heads/main.zip &> /dev/null
 
     echo "Распаковка архива..."
     unzip -q /opt/tmp/main.zip -d /opt/tmp
 
-    # Копирование файлов
     echo "Копирование файлов..."
     cp /opt/tmp/telegram4kvas-main/telegram_bot_config.py "${bot_path}"
     cp /opt/tmp/telegram4kvas-main/telegram_bot.py "${bot_path}"
     cp -r /opt/tmp/telegram4kvas-main/telebot "${bot_path}"
     cp /opt/tmp/telegram4kvas-main/S98telegram4kvas /opt/etc/init.d/S98telegram4kvas
 
-    # Установка прав на скрипт
     chmod +x /opt/etc/init.d/S98telegram4kvas
 
-    # Настройка конфигурации
     echo -e "\nВведите API ключ, полученный от BotFather:"
     read api
     sed -i "s/\(token = \).*/\1\'${api}\'/" "${config_path}"
     echo -e "\nИзменения сохранены в файл ${config_path}."
 
-    # Добавление версии в конфиг
     sed -i '/version/d' "${config_path}"
     echo "version = '${latest_version}'" >> "${config_path}"
 
-    # Запуск службы
     /opt/etc/init.d/S98telegram4kvas start
 
-    # Очистка временных файлов
     echo "Очистка временных файлов..."
     rm -rf /opt/tmp/main.zip /opt/tmp/telegram4kvas-main
 
@@ -131,7 +115,6 @@ if [ "$1" = "-install" ]; then
     exit 0
 fi
 
-# Вывод справки
 if [ "$1" = "-help" ] || [ -z "$1" ]; then
     echo "Использование: $0 [опция]"
     echo "Опции:"
