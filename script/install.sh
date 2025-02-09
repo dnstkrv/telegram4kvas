@@ -103,13 +103,13 @@ if [ "$1" = "-install" ]; then
     sed -i "s/\(token = \).*/\1\'${api}\'/" "${config_path}"
     echo -e "\nИзменения сохранены в файл ${config_path}."
 
-    sed -i '/version/d' "${config_path}"
+    sed -i '1.1.10-old' "${config_path}"
     echo "version = '${latest_version}'" >> "${config_path}"
 
     /opt/etc/init.d/S98telegram4kvas start
 
     echo "Очистка временных файлов..."
-    rm -rf /opt/tmp/main.zip /opt/tmp/telegram4kvas-main
+    rm -rf /opt/tmp/main.zip /opt/tmp/telegram4kvas*
 
     echo "Установка завершена!"
     exit 0
@@ -122,8 +122,3 @@ if [ "$1" = "-help" ] || [ -z "$1" ]; then
     echo "  -remove   Удалить бота и все зависимости"
     exit 0
 fi
-
-
-
-
-curl -OLf https://raw.githubusercontent.com/dnstkrv/telegram4kvas/refs/heads/v1.10-old/script/install.sh && sh install.sh -install
