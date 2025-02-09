@@ -163,7 +163,6 @@ def service_message(message: types.Message):
             types.KeyboardButton("Запустить reset"),
             types.KeyboardButton("Перезагрузить роутер"),
             types.KeyboardButton("Терминал"),
-            types.KeyboardButton("Обновить бота"),
             types.KeyboardButton("Добавить пользователя"),
             types.KeyboardButton("Запросить лог"),
             types.KeyboardButton("Назад"),
@@ -873,7 +872,6 @@ def custom_command(message: types.Message):
             types.KeyboardButton("Запустить reset"),
             types.KeyboardButton("Перезагрузить роутер"),
             types.KeyboardButton("Терминал"),
-            types.KeyboardButton("Обновить бота"),
             types.KeyboardButton("Назад"),
         ]
         keyboard.add(*buttons)
@@ -959,46 +957,6 @@ def run_reset(message: types.Message):
     except Exception as e:
         logger.exception("Error in run_reset: %s", str(e))
         bot.send_message(message.chat.id, "Произошла ошибка при запуске сброса.")
-
-
-@bot.message_handler(regexp="Обновить бота", chat_types=["private"])
-def update_bot(message: types.Message):
-    try:
-        logger.warning(
-            "User %s requested to update the bot", message.from_user.username
-        )
-
-        response = requests.get(
-            "https://api.github.com/repos/dnstkrv/telegram4kvas/releases/latest"
-        )
-        if response.status_code != 200:
-            raise Exception(f"Failed to retrieve latest version: {response.text}")
-        version_now = telegram_bot_config.version
-        version_new = response.json()["tag_name"]
-        changelog = response.json()["body"]
-
-        if version_now != version_new:
-            bot.send_message(
-                message.chat.id,
-                f"Текущая версия бота: {version_now}, устанавливается версия: {version_new}",
-            )
-            if changelog:
-                send_long_message(changelog, message)
-            os.system(
-                "curl -o /opt/upgrade.sh https://raw.githubusercontent.com/dnstkrv/telegram4kvas/main/upgrade.sh && sh /opt/upgrade.sh && rm /opt/upgrade.sh"
-            )
-            bot.send_message(message.chat.id, "Запущено обновление бота")
-        else:
-            bot.send_message(
-                message.chat.id,
-                f"Текущая версия актуальна ({version_now})",
-            )
-
-        logger.warning("The bot has started updating")
-
-    except Exception as e:
-        logger.exception("Error in update_bot: %s", str(e))
-        bot.send_message(message.chat.id, "Произошла ошибка при обновлении бота.")
 
 
 @bot.message_handler(regexp="Назад", chat_types=["private"])

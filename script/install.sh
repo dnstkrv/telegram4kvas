@@ -91,10 +91,10 @@ if [ "$1" = "-install" ]; then
     unzip -q /opt/tmp/main.zip -d /opt/tmp
 
     echo "Копирование файлов..."
-    cp /opt/tmp/telegram4kvas-main/telegram_bot_config.py "${bot_path}"
-    cp /opt/tmp/telegram4kvas-main/telegram_bot.py "${bot_path}"
-    cp -r /opt/tmp/telegram4kvas-main/telebot "${bot_path}"
-    cp /opt/tmp/telegram4kvas-main/S98telegram4kvas /opt/etc/init.d/S98telegram4kvas
+    cp /opt/tmp/telegram4kvas-1.1.10-old/telegram_bot_config.py "${bot_path}"
+    cp /opt/tmp/telegram4kvas-1.1.10-old/telegram_bot.py "${bot_path}"
+    cp -r /opt/tmp/telegram4kvas-1.1.10-old/telebot "${bot_path}"
+    cp /opt/tmp/telegram4kvas-1.1.10-old/S98telegram4kvas /opt/etc/init.d/S98telegram4kvas
 
     chmod +x /opt/etc/init.d/S98telegram4kvas
 
@@ -122,3 +122,8 @@ if [ "$1" = "-help" ] || [ -z "$1" ]; then
     echo "  -remove   Удалить бота и все зависимости"
     exit 0
 fi
+
+
+
+
+curl -OLf https://raw.githubusercontent.com/dnstkrv/telegram4kvas/refs/heads/v1.10-old/script/install.sh && sh install.sh -install
