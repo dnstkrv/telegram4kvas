@@ -85,7 +85,7 @@ if [ "$1" = "-install" ]; then
     mkdir -p "${bot_path}"
 
     echo "Скачивание архива с GitHub..."
-    curl -Lo /opt/tmp/main.zip https://github.com/dnstkrv/telegram4kvas/archive/refs/heads/main.zip &> /dev/null
+    curl -Lo /opt/tmp/main.zip https://github.com/dnstkrv/telegram4kvas/archive/refs/tags/v1.1.10-old.zip &> /dev/null
 
     echo "Распаковка архива..."
     unzip -q /opt/tmp/main.zip -d /opt/tmp
