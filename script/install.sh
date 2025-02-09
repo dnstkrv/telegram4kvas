@@ -103,13 +103,13 @@ if [ "$1" = "-install" ]; then
     sed -i "s/\(token = \).*/\1\'${api}\'/" "${config_path}"
     echo -e "\nИзменения сохранены в файл ${config_path}."
 
-    sed -i '1.1.10-old' "${config_path}"
-    echo "version = '${latest_version}'" >> "${config_path}"
+    sed -i '/version/d' "${config_path}"
+    echo "version = '1.1.10-old'" >> "${config_path}"
 
     /opt/etc/init.d/S98telegram4kvas start
 
     echo "Очистка временных файлов..."
-    rm -rf /opt/tmp/main.zip /opt/tmp/telegram4kvas-1.1.10-old
+    rm -rf /opt/tmp/main.zip /opt/tmp/telegram4kvas*
 
     echo "Установка завершена!"
     exit 0
