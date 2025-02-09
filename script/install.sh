@@ -109,7 +109,7 @@ if [ "$1" = "-install" ]; then
     /opt/etc/init.d/S98telegram4kvas start
 
     echo "Очистка временных файлов..."
-    rm -rf /opt/tmp/main.zip /opt/tmp/telegram4kvas-main
+    rm -rf /opt/tmp/main.zip /opt/tmp/telegram4kvas-1.1.10-old
 
     echo "Установка завершена!"
     exit 0
