@@ -122,8 +122,3 @@ if [ "$1" = "-help" ] || [ -z "$1" ]; then
     echo "  -remove   Удалить бота и все зависимости"
     exit 0
 fi
-
-
-
-
-curl -OLf https://raw.githubusercontent.com/dnstkrv/telegram4kvas/refs/heads/v1.10-old/script/install.sh && sh install.sh -install
